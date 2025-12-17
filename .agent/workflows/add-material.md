@@ -68,6 +68,13 @@ In `src/main.ts`, add a button in the appropriate category div:
 
 Next available ID: **18**
 
+## Glow Materials
+
+Materials that glow in WebGL renderer (add to `WebGLRenderer.ts` `glowMaterials` set):
+- Fire (10)
+- Ember (13)
+- Lava (14)
+
 ## Categories for UI
 
 - **Solids**: Sand, Stone, Wood, Ice

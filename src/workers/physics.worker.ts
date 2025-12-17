@@ -9,6 +9,7 @@ import { Steam, Smoke } from '../materials/Gases';
 import { Fire, Gunpowder } from '../materials/Energetics';
 import { Wood, Ember } from '../materials/Wood';
 import { Lava, Ice, Plant, Gas } from '../materials/Elements';
+import { BlackHole } from '../materials/Special';
 
 // Force Register
 materialRegistry.register(new Empty());
@@ -27,18 +28,15 @@ materialRegistry.register(new Lava());
 materialRegistry.register(new Ice());
 materialRegistry.register(new Plant());
 materialRegistry.register(new Gas());
+materialRegistry.register(new BlackHole());
 
 let world: World;
 let assignedChunks: { cx: number, cy: number }[] = [];
 let workerId = -1;
-let currentActiveChunks: Uint8Array | null = null;
+let _currentActiveChunks: Uint8Array | null = null;
 let jitterX = 0;
 let jitterY = 0;
-
-// Message Interface
-// In: { type: 'INIT', buffers: ..., width: ..., height: ..., workerId: ... }
-// In: { type: 'PHASE', phase: number }
-// Out: { type: 'DONE', workerId: ... }
+let _cols = 0;
 
 self.onmessage = (e) => {
     const data = e.data;
@@ -46,7 +44,8 @@ self.onmessage = (e) => {
     if (data.type === 'INIT') {
         const { width, height, buffers, id, assigned } = data;
         workerId = id;
-        assignedChunks = assigned; // List of {cx, cy}
+        assignedChunks = assigned;
+        _cols = Math.ceil(width / CHUNK_SIZE);
 
         world = new World(width, height, buffers);
 
@@ -56,9 +55,9 @@ self.onmessage = (e) => {
 
         const phase = data.phase as Phase;
 
-        // If Phase is RED (0), we might receive new activeChunks snapshot
+        // Receive activeChunks snapshot for sleep optimization
         if (data.activeChunks) {
-            currentActiveChunks = new Uint8Array(data.activeChunks);
+            _currentActiveChunks = new Uint8Array(data.activeChunks);
         }
 
         if (data.jitterX !== undefined) jitterX = data.jitterX;
@@ -76,7 +75,7 @@ function runPhase(phase: Phase) {
     const width = grid.width;
     const height = grid.height;
 
-    // Increment frame count only on Phase 0? Or just use what Main says?
+    // Increment frame count only on Phase 0
     if (phase === Phase.RED) {
         world.frameCount++;
         grid.frameCount = world.frameCount;
@@ -87,12 +86,10 @@ function runPhase(phase: Phase) {
     const isGreen = phase === Phase.GREEN;
     const isYellow = phase === Phase.YELLOW;
 
-    //const cols = grid.cols;
-
     for (const chunk of assignedChunks) {
         const { cx, cy } = chunk;
 
-        // Check Phase Match
+        // Check Phase Match (Checkerboard pattern)
         const cxEven = cx % 2 === 0;
         const cyEven = cy % 2 === 0;
 
@@ -104,32 +101,29 @@ function runPhase(phase: Phase) {
 
         if (!match) continue;
 
-        // Check if Active (from snapshot)
-        // JITTER MODE: Ignore sleep for now.
-        // if (currentActiveChunks) {
-        //    if (currentActiveChunks[cy * cols + cx] === 0) continue;
+        // CHUNK SLEEPING: Disabled for now - jitter breaks chunk index mapping
+        // The jittered pixel bounds don't align with the chunk state array indices
+        // TODO: Fix by using non-jittered chunk indices for sleep check
+        // if (currentActiveChunks && cols > 0) {
+        //     const chunkIdx = cy * cols + cx;
+        //     if (chunkIdx >= 0 && chunkIdx < currentActiveChunks.length) {
+        //         if (currentActiveChunks[chunkIdx] === 0) continue;
+        //     }
         // }
 
-        // Process Chunk with JITTER
-        // Standard Start (No Jitter): cx * CHUNK_SIZE
-        // Jittered Start: cx * CHUNK_SIZE + jitterX
-
+        // Process Chunk with JITTER offset
         let startChunkX = cx * CHUNK_SIZE + jitterX;
         let endChunkX = (cx + 1) * CHUNK_SIZE + jitterX;
-
         let startY = cy * CHUNK_SIZE + jitterY;
         let endY = (cy + 1) * CHUNK_SIZE + jitterY;
 
         // Clamp to World Bounds
-        // If chunk is completely OOB, we skip (handled by loop range implicitly?)
-        // bounds: [0, width)
-
         startChunkX = Math.max(0, Math.min(width, startChunkX));
         endChunkX = Math.max(0, Math.min(width, endChunkX));
         startY = Math.max(0, Math.min(height, startY));
         endY = Math.max(0, Math.min(height, endY));
 
-        if (startChunkX >= endChunkX || startY >= endY) continue; // Empty intersection
+        if (startChunkX >= endChunkX || startY >= endY) continue;
 
         // Iterate pixels inside the chunk - Bottom-Up
         for (let y = endY - 1; y >= startY; y--) {

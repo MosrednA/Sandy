@@ -1,4 +1,5 @@
 import { CHUNK_SIZE } from './Constants';
+import { PARTICLE_COUNT_INDEX } from './SharedMemory';
 
 export class Grid {
     width: number;
@@ -12,9 +13,16 @@ export class Grid {
     activeChunks: Uint8Array; // 1 = Active, 0 = Sleeping (Current Frame)
     velocity: Float32Array;
     frameCount: number = 0;
-    particleCount: number = 0;
 
-    constructor(width: number, height: number, buffers?: { grid: SharedArrayBuffer, velocity: SharedArrayBuffer, chunkState: SharedArrayBuffer }) {
+    // Shared sync buffer for atomic operations
+    private syncView: Int32Array | null = null;
+
+    constructor(width: number, height: number, buffers?: {
+        grid: SharedArrayBuffer,
+        velocity: SharedArrayBuffer,
+        chunkState: SharedArrayBuffer,
+        sync?: SharedArrayBuffer
+    }) {
         this.width = width;
         this.height = height;
 
@@ -25,22 +33,15 @@ export class Grid {
             this.cells = new Uint8Array(buffers.grid);
             this.velocity = new Float32Array(buffers.velocity);
             this.chunks = new Uint8Array(buffers.chunkState);
+            if (buffers.sync) {
+                this.syncView = new Int32Array(buffers.sync);
+            }
         } else {
-            // Fallback (or Main Thread init logic if we didn't want SharedMemory class inside Grid?)
-            // Actually, best to just pass TypedArrays or Buffers.
             this.cells = new Uint8Array(width * height);
             this.velocity = new Float32Array(width * height);
             this.chunks = new Uint8Array(this.cols * this.rows).fill(1);
         }
 
-        // activeChunks can be local?
-        // If workers need to know what was active LAST frame, they need to see it.
-        // But usually workers just read 'chunks' which accumulates wake-ups for NEXT frame.
-        // We probably only need to share 'chunks' (next frame active state).
-        // 'activeChunks' allows us to skip inactive chunks during processing.
-        // If we want workers to respect activeChunks, it needs to be shared or synchronized.
-        // For simplicity, let's keep activeChunks local to the processing loop or shared if needed.
-        // Let's assume activeChunks is local snapshot of shared chunks buffer from start of frame.
         this.activeChunks = new Uint8Array(this.cols * this.rows).fill(1);
     }
 
@@ -66,7 +67,6 @@ export class Grid {
 
     /**
      * Moves a particle including its data (velocity).
-     * Returns true if successful.
      */
     move(x1: number, y1: number, x2: number, y2: number): void {
         const idx1 = y1 * this.width + x1;
@@ -110,8 +110,15 @@ export class Grid {
         if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
             const idx = y * this.width + x;
             const old = this.cells[idx];
-            if (old === 0 && id !== 0) this.particleCount++;
-            else if (old !== 0 && id === 0) this.particleCount--;
+
+            // Update shared particle count atomically
+            if (this.syncView) {
+                if (old === 0 && id !== 0) {
+                    Atomics.add(this.syncView, PARTICLE_COUNT_INDEX, 1);
+                } else if (old !== 0 && id === 0) {
+                    Atomics.add(this.syncView, PARTICLE_COUNT_INDEX, -1);
+                }
+            }
 
             this.cells[idx] = id;
             this.velocity[idx] = 0; // Reset velocity on manual set
@@ -124,13 +131,21 @@ export class Grid {
      */
     setIndex(index: number, id: number): void {
         const old = this.cells[index];
-        if (old === 0 && id !== 0) this.particleCount++;
-        else if (old !== 0 && id === 0) this.particleCount--;
+
+        // Update shared particle count atomically
+        if (this.syncView) {
+            if (old === 0 && id !== 0) {
+                Atomics.add(this.syncView, PARTICLE_COUNT_INDEX, 1);
+            } else if (old !== 0 && id === 0) {
+                Atomics.add(this.syncView, PARTICLE_COUNT_INDEX, -1);
+            }
+        }
 
         this.cells[index] = id;
         this.velocity[index] = 0; // Reset velocity
-        const x = index % this.width;
-        const y = Math.floor(index / this.width);
+        // Bitwise floor is faster than Math.floor for positive integers
+        const x = index - ((index / this.width) | 0) * this.width; // x = index % width (faster)
+        const y = (index / this.width) | 0;
         this.wake(x, y);
     }
 
@@ -143,7 +158,9 @@ export class Grid {
         this.velocity.fill(0);
         this.chunks.fill(0);
         this.activeChunks.fill(0);
-        this.particleCount = 0;
+        if (this.syncView) {
+            Atomics.store(this.syncView, PARTICLE_COUNT_INDEX, 0);
+        }
     }
 
     wake(x: number, y: number) {
@@ -164,7 +181,7 @@ export class Grid {
         const onBottom = localY === CHUNK_SIZE - 1;
 
         if (onLeft) this.wakeChunk(cx - 1, cy);
-        else if (onRight) this.wakeChunk(cx + 1, cy); // Can't be both left and right if size > 1
+        else if (onRight) this.wakeChunk(cx + 1, cy);
 
         if (onTop) this.wakeChunk(cx, cy - 1);
         else if (onBottom) this.wakeChunk(cx, cy + 1);
@@ -178,17 +195,12 @@ export class Grid {
 
     private wakeChunk(cx: number, cy: number) {
         if (cx >= 0 && cx < this.cols && cy >= 0 && cy < this.rows) {
-            // Direct array access if possible, or calculate index
             this.chunks[cy * this.cols + cx] = 1;
         }
     }
 
     swapChunks() {
-        // Swap active buffers
-        // activeChunks = current frame reading
-        // chunks = next frame writing
         this.activeChunks.set(this.chunks);
         this.chunks.fill(0);
     }
 }
-

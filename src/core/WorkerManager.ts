@@ -57,7 +57,8 @@ export class WorkerManager {
                 buffers: {
                     grid: this.sharedMemory.gridBuffer,
                     velocity: this.sharedMemory.velocityBuffer,
-                    chunkState: this.sharedMemory.chunkStateBuffer
+                    chunkState: this.sharedMemory.chunkStateBuffer,
+                    sync: this.sharedMemory.syncBuffer
                 }
             });
         }
@@ -96,9 +97,9 @@ export class WorkerManager {
         // Let's pass it to the first one.
 
         await this.runPhase(phases[0], this.currentActiveChunks, jitterX, jitterY);
-        await this.runPhase(phases[1], undefined, jitterX, jitterY);
-        await this.runPhase(phases[2], undefined, jitterX, jitterY);
-        await this.runPhase(phases[3], undefined, jitterX, jitterY);
+        await this.runPhase(phases[1], this.currentActiveChunks, jitterX, jitterY);
+        await this.runPhase(phases[2], this.currentActiveChunks, jitterX, jitterY);
+        await this.runPhase(phases[3], this.currentActiveChunks, jitterX, jitterY);
     }
 
     private runPhase(phase: Phase, activeSnapshot?: Uint8Array, jitterX: number = 0, jitterY: number = 0): Promise<void> {

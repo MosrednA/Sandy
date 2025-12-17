@@ -1,6 +1,6 @@
 import './style.css';
 import { World } from './core/World';
-import { Renderer } from './rendering/Renderer';
+import { WebGLRenderer } from './rendering/WebGLRenderer';
 import { InputHandler } from './input/InputHandler';
 import { materialRegistry } from './materials/MaterialRegistry';
 import { Empty, Stone } from './materials/Solids';
@@ -13,6 +13,7 @@ import { Steam, Smoke } from './materials/Gases';
 import { Fire, Gunpowder } from './materials/Energetics';
 import { Wood, Ember } from './materials/Wood';
 import { Lava, Ice, Plant, Gas } from './materials/Elements';
+import { BlackHole } from './materials/Special';
 
 // 1. Register Materials
 materialRegistry.register(new Empty());
@@ -31,6 +32,7 @@ materialRegistry.register(new Lava()); // ID 14
 materialRegistry.register(new Ice()); // ID 15
 materialRegistry.register(new Plant()); // ID 16
 materialRegistry.register(new Gas()); // ID 17
+materialRegistry.register(new BlackHole()); // ID 18
 
 // 2. Setup Canvas
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -80,6 +82,12 @@ app.innerHTML = `
                 <span class="category-label">Nature</span>
                 <div class="material-group">
                     <button class="mat-btn" data-id="16" data-name="Plant" data-tip="Grows upward near water. Burns." style="--btn-color: #22AA22"></button>
+                </div>
+            </div>
+            <div class="category">
+                <span class="category-label">Special</span>
+                <div class="material-group">
+                    <button class="mat-btn" data-id="18" data-name="Black Hole" data-tip="Attracts and consumes particles!" style="--btn-color: #220033"></button>
                 </div>
             </div>
             <div class="category">
@@ -185,10 +193,11 @@ const workerManager = new WorkerManager(sharedMemory);
 const world = new World(WORLD_WIDTH, WORLD_HEIGHT, {
   grid: sharedMemory.gridBuffer,
   velocity: sharedMemory.velocityBuffer,
-  chunkState: sharedMemory.chunkStateBuffer
+  chunkState: sharedMemory.chunkStateBuffer,
+  sync: sharedMemory.syncBuffer
 });
 
-const renderer = new Renderer(world, canvas.getContext('2d')!);
+const renderer = new WebGLRenderer(world, canvas);
 const input = new InputHandler(world, canvas);
 
 // 4. UI Logic
@@ -252,13 +261,7 @@ async function loop() {
 
   if (now - lastFpsTime >= 1000) {
     fpsEl.innerText = `${frames} FPS`;
-    pEl.innerText = `${world.grid.particleCount.toLocaleString()} Particles`; // Might be flickering if workers update count?
-    // particleCount in Grid is local to the instance.
-    // Workers update THEIR Grid instance particleCount.
-    // Main thread Grid particleCount is NOT updated.
-    // We definitely need the SyncBuffer to track particle count globally if we want this Number to be real.
-    // For now, it will likely show 0.
-    // TODO: Sync particle count via SharedArrayBuffer (Atomic add).
+    pEl.innerText = `${sharedMemory.getParticleCount().toLocaleString()} Particles`;
 
     frames = 0;
     lastFpsTime = now;

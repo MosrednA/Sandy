@@ -26,9 +26,10 @@ export class InputHandler {
 
     private getGridPos(e: MouseEvent) {
         const rect = this.canvas.getBoundingClientRect();
-        // Logical Size / Visual Size
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
+        // Map screen coordinates to grid coordinates
+        // Grid is fixed size, canvas is stretched to fill window
+        const scaleX = this.world.grid.width / rect.width;
+        const scaleY = this.world.grid.height / rect.height;
 
         const x = Math.floor((e.clientX - rect.left) * scaleX);
         const y = Math.floor((e.clientY - rect.top) * scaleY);

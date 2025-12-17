@@ -6,7 +6,12 @@ export class World {
     grid: Grid;
     frameCount: number = 0;
 
-    constructor(width?: number, height?: number, buffers?: { grid: SharedArrayBuffer, velocity: SharedArrayBuffer, chunkState: SharedArrayBuffer }) {
+    constructor(width?: number, height?: number, buffers?: {
+        grid: SharedArrayBuffer,
+        velocity: SharedArrayBuffer,
+        chunkState: SharedArrayBuffer,
+        sync?: SharedArrayBuffer
+    }) {
         // Use args or fallback to constants
         const w = width || WORLD_WIDTH;
         const h = height || WORLD_HEIGHT;

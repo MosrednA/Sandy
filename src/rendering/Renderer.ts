@@ -55,13 +55,7 @@ export class Renderer {
         const rows = grid.rows;
         const chunkSize = Math.ceil(width / cols); // Should match CHUNK_SIZE
 
-        // If whole world is cleared/reset, we need a full clear flag? 
-        // For now, assume if particleCount is 0, we clear all.
-        if (grid.particleCount === 0) {
-            buf.fill(0xFF111111);
-            this.ctx.putImageData(this.imageData, 0, 0);
-            return;
-        }
+
 
         for (let cy = 0; cy < rows; cy++) {
             for (let cx = 0; cx < cols; cx++) {

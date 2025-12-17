@@ -1,12 +1,15 @@
 <p align="center">
   <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite"/>
-  <img src="https://img.shields.io/badge/Canvas-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="Canvas"/>
+  <img src="https://img.shields.io/badge/PixiJS-E91E63?style=for-the-badge&logo=webgl&logoColor=white" alt="PixiJS"/>
+  <img src="https://img.shields.io/badge/WebGL-990000?style=for-the-badge&logo=webgl&logoColor=white" alt="WebGL"/>
 </p>
 
 # 🏜️ Sandy
 
-A high-performance **falling sand simulation** built with TypeScript and Web Workers. Create, destroy, and watch elements interact in a satisfying particle sandbox.
+A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded physics, and beautiful glow effects.
+
+> 🚀 **880,000+ particles at 100+ FPS** on modern hardware!
 
 ![Falling Sand Demo](https://raw.githubusercontent.com/MosrednA/Sandy/main/public/demo.gif)
 
@@ -15,64 +18,65 @@ A high-performance **falling sand simulation** built with TypeScript and Web Wor
 ## ✨ Features
 
 ### 🧱 Materials
-| Category       | Materials                     |
-| -------------- | ----------------------------- |
-| **Solids**     | Sand, Stone, Wood, Ice, Plant |
-| **Liquids**    | Water, Oil, Acid              |
-| **Gases**      | Steam, Flammable Gas          |
-| **Energetics** | Fire, Lava, Ember, Gunpowder  |
+| Category    | Materials                         |
+| ----------- | --------------------------------- |
+| **Solids**  | Sand, Stone, Wood, Ice            |
+| **Liquids** | Water, Oil, Acid, Lava            |
+| **Gases**   | Steam, Smoke, Flammable Gas       |
+| **Fire**    | Fire, Ember, Gunpowder            |
+| **Nature**  | Plant (grows with water!)         |
+| **Special** | ⚫ Black Hole (attracts particles) |
 
 ### ⚡ Interactions
-- 🔥 **Fire** spreads to wood and ignites oil & gas explosively
-- 💧 **Water** extinguishes fire and creates steam near lava
-- 🧪 **Acid** dissolves materials and creates bubbling reactions
-- 🧊 **Ice** freezes water and melts near heat sources
-- 🌱 **Plants** grow when touched by water
+- 🔥 Fire spreads to wood, ignites oil & gas explosively
+- 💧 Water extinguishes fire, creates steam near lava
+- 🧪 Acid dissolves materials with bubbling reactions
+- 🧊 Ice freezes water, melts near heat sources
+- 🌱 Plants grow upward when near water
+- 🌋 Lava hardens to stone in water, ignites everything
+- ⚫ Black Holes pull in and consume nearby particles!
 
-### 🚀 Performance
-- **Chunk-based physics** – Only active regions are simulated
-- **Web Workers** – Physics runs off the main thread
-- **Dirty rectangle rendering** – Minimal canvas updates
-- **60 FPS** target with thousands of particles
+### 🚀 Performance Optimizations
+| Optimization            | Description                     |
+| ----------------------- | ------------------------------- |
+| **WebGL Rendering**     | GPU-accelerated via PixiJS      |
+| **Uint32 Pixel Writes** | 4x fewer memory operations      |
+| **Pre-computed Colors** | Zero runtime color conversion   |
+| **Web Workers**         | Physics runs off main thread    |
+| **Shared Memory**       | Atomic particle counting        |
+| **Glow Effects**        | Additive blending for fire/lava |
 
 ---
 
 ## 🎮 Controls
 
-| Action              | Input                                |
-| ------------------- | ------------------------------------ |
-| **Draw**            | Left Mouse (hold & drag)             |
-| **Change Material** | Click material buttons               |
-| **Brush Size**      | Slider in UI panel                   |
-| **Clear Canvas**    | Clear button                         |
-| **Override Mode**   | Toggle to replace existing particles |
+| Action            | Input                    |
+| ----------------- | ------------------------ |
+| **Draw**          | Left Mouse (hold & drag) |
+| **Erase**         | Right Mouse              |
+| **Brush Size**    | Slider in UI             |
+| **Clear Canvas**  | Clear button             |
+| **Override Mode** | Toggle on/off            |
 
 ---
 
 ## 🛠️ Getting Started
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-
-### Installation
-
 ```bash
-# Clone the repository
+# Clone
 git clone https://github.com/MosrednA/Sandy.git
 cd Sandy
 
-# Install dependencies
+# Install
 npm install
 
-# Start development server
+# Run
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:5173](http://localhost:5173)
 
-### Build for Production
-
+### Production Build
 ```bash
 npm run build
 npm run preview
@@ -85,36 +89,20 @@ npm run preview
 ```
 Sandy/
 ├── src/
-│   ├── core/           # World, Grid, and simulation logic
-│   ├── materials/      # Material definitions (Sand, Water, Fire, etc.)
-│   ├── rendering/      # Canvas rendering system
-│   ├── input/          # Mouse/touch input handling
-│   ├── workers/        # Web Worker for physics thread
-│   └── main.ts         # Application entry point
-├── public/             # Static assets
-└── index.html          # HTML entry point
+│   ├── core/           # World, Grid, SharedMemory, Constants
+│   ├── materials/      # Sand, Water, Fire, BlackHole, etc.
+│   ├── rendering/      # WebGLRenderer, BlackHoleFilter
+│   ├── input/          # Line-interpolated drawing
+│   ├── workers/        # Physics worker (multi-threaded)
+│   └── main.ts         # Entry point
+└── index.html
 ```
 
 ---
 
 ## 🧩 Adding New Materials
 
-1. Create a new material class in `src/materials/`
-2. Extend the `Material` base class
-3. Implement `id`, `name`, `color`, and `update()` method
-4. Register in `main.ts` with `materialRegistry.register()`
-5. Add UI button in the HTML template
-
-See `/add-material` workflow for detailed steps.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to:
-- 🐛 Report bugs
-- 💡 Suggest new materials or interactions
-- 🔧 Submit pull requests
+See the [`/add-material`](.agent/workflows/add-material.md) workflow for detailed steps.
 
 ---
 
