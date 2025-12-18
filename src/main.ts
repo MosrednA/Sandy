@@ -33,9 +33,10 @@ app.innerHTML = `
                 <span class="category-label">Liquids</span>
                 <div class="material-group">
                     <button class="mat-btn" data-id="3" data-name="Water" data-tip="Flows and spreads. Extinguishes fire." style="--btn-color: #4488FF"></button>
-                    <button class="mat-btn" data-id="8" data-name="Acid" data-tip="Dissolves sand, stone and wood!" style="--btn-color: #66FF33"></button>
+                    <button class="mat-btn" data-id="8" data-name="Acid" data-tip="Dissolves sand, stone and wood!" style="--btn-color: #CCFF33"></button>
                     <button class="mat-btn" data-id="9" data-name="Oil" data-tip="Floats on water. Very flammable!" style="--btn-color: #331100"></button>
                     <button class="mat-btn" data-id="14" data-name="Lava" data-tip="Burns everything. Stone + steam with water." style="--btn-color: #FF2200"></button>
+                    <button class="mat-btn" data-id="20" data-name="Slime" data-tip="Radioactive! Mutates water to acid, burns wood." style="--btn-color: #00EE22"></button>
                 </div>
             </div>
             <div class="category">
@@ -50,6 +51,7 @@ app.innerHTML = `
                 <div class="material-group">
                     <button class="mat-btn" data-id="10" data-name="Fire" data-tip="Spreads to flammables. Creates smoke." style="--btn-color: #FF4400"></button>
                     <button class="mat-btn" data-id="11" data-name="Powder" data-tip="Gunpowder! Explodes when ignited." style="--btn-color: #444444"></button>
+                    <button class="mat-btn" data-id="21" data-name="C4" data-tip="Plastic explosive. Sticks to walls. BIG BOOM." style="--btn-color: #DDDDDD"></button>
                 </div>
             </div>
             <div class="category">
@@ -70,6 +72,8 @@ app.innerHTML = `
             </div>
             <div class="action-group">
                 <button id="clear-btn" class="action-btn">Clear</button>
+
+                <button id="open-demo-btn" class="action-btn" style="background: rgba(100, 255, 100, 0.2); color: #88ff88;">Demos</button>
                 <button id="open-sl-btn" class="action-btn" style="background: rgba(68, 136, 255, 0.2); color: #88bbff;">Save/Load</button>
                 <label class="toggle-label">
                     <input type="checkbox" id="override-toggle" checked>
@@ -213,6 +217,13 @@ const saveLoadUI = new SaveLoadUI(world);
 const openSlBtn = document.getElementById('open-sl-btn')!;
 openSlBtn.addEventListener('click', () => {
   saveLoadUI.show();
+});
+
+import { DemoManager } from './ui/DemoManager';
+const demoManager = new DemoManager(world);
+const openDemoBtn = document.getElementById('open-demo-btn')!;
+openDemoBtn.addEventListener('click', () => {
+  demoManager.show();
 });
 
 // Override toggle

@@ -79,36 +79,7 @@ export class Fire extends Material {
 
     private explode(grid: Grid, cx: number, cy: number) {
         const radius = 5 + Math.floor(Math.random() * 3);
-
-        for (let dy = -radius; dy <= radius; dy++) {
-            for (let dx = -radius; dx <= radius; dx++) {
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist <= radius) {
-                    const nx = cx + dx;
-                    const ny = cy + dy;
-                    const id = grid.get(nx, ny);
-
-                    // Don't destroy boundary
-                    if (id === 255 || id === undefined) continue;
-
-                    // Chance to destroy based on distance
-                    const chance = 1 - (dist / radius) * 0.5;
-                    if (Math.random() < chance) {
-                        if (id === 11) {
-                            // Chain reaction! (but defer to next frame naturally)
-                            grid.set(nx, ny, 10); // Turn to fire
-                        } else if (id !== 1) { // Don't destroy Stone easily
-                            // Outer ring turns to smoke only (no spreading fire)
-                            if (dist > radius * 0.7) {
-                                grid.set(nx, ny, 19); // HotSmoke (was 12)
-                            } else {
-                                grid.set(nx, ny, 0);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        EnergeticsUtils.explode(grid, cx, cy, radius, 10); // Self ID meaningless for fire but whatever
     }
 }
 
@@ -184,31 +155,138 @@ export class Gunpowder extends Material {
 
     private explode(grid: Grid, cx: number, cy: number) {
         const radius = 5 + Math.floor(Math.random() * 3);
+        EnergeticsUtils.explode(grid, cx, cy, radius, 11);
+    }
+}
 
+class EnergeticsUtils {
+    static explode(grid: Grid, cx: number, cy: number, radius: number, selfID: number) {
+        // 1. Destruction Zone (Inner)
+        const destructionR2 = radius * radius;
         for (let dy = -radius; dy <= radius; dy++) {
             for (let dx = -radius; dx <= radius; dx++) {
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist <= radius) {
+                const dist2 = dx * dx + dy * dy;
+                if (dist2 <= destructionR2) {
                     const nx = cx + dx;
                     const ny = cy + dy;
                     const id = grid.get(nx, ny);
 
                     if (id === 255 || id === undefined) continue;
 
-                    const chance = 1 - (dist / radius) * 0.5;
+                    if (id === 0) {
+                        if (Math.random() < 0.2) grid.set(nx, ny, Math.random() < 0.5 ? 10 : 19);
+                        continue;
+                    }
+
+                    const chance = 1 - (Math.sqrt(dist2) / radius) * 0.8;
                     if (Math.random() < chance) {
-                        if (id === 11) {
-                            grid.set(nx, ny, 10); // Chain reaction
-                        } else if (id !== 1) {
-                            if (dist > radius * 0.7) {
-                                grid.set(nx, ny, 19); // HotSmoke (was 12)
-                            } else {
-                                grid.set(nx, ny, 0);
+                        if (id === selfID || id === 11 || id === 21) {
+                            grid.set(nx, ny, 10);
+                        } else if (id !== 1 && id !== 7) {
+                            grid.set(nx, ny, 19);
+                        } else {
+                            if (radius > 10 && Math.random() < 0.3) grid.set(nx, ny, 0);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Shockwave Zone (Outer Ring) - Push particles away
+        // We iterate OUTWARD-IN (from far away to center) to prevent overwriting?
+        // No, if we push OUT, we want to move the OUTER ones first so there is space.
+        // So we iterate rings from MaxRadius down to DestructionRadius.
+        const shockRadius = radius * 1.5;
+        const shockR2 = shockRadius * shockRadius;
+
+        for (let r = Math.floor(shockRadius); r > radius; r--) {
+            // Check circumference (roughly)
+            // Or just scan the box area excluding inner circle? 
+            // Scan box is easier.
+            for (let dy = -r; dy <= r; dy++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    const dist2 = dx * dx + dy * dy;
+                    // processing ring "r" roughly
+                    if (dist2 > destructionR2 && dist2 <= shockR2) {
+                        // Only process if roughly at current radius r to ensure order?
+                        // Actually, sorting by distance is expensive.
+                        // Let's just do a chaotic displacement.
+                        // Ideally we process from Outer -> Inner. 
+                        // But scanning X/Y doesn't do that.
+                        // Let's just scan the whole outer box and move if we can.
+                        // It might compress particles, but that's fine.
+
+                        // To avoid processing same particle twice (if moved into future scan), 
+                        // this implementation is tricky in a single frame without double buffering.
+                        // But we can just try to throw them.
+
+                        const nx = cx + dx;
+                        const ny = cy + dy;
+                        const id = grid.get(nx, ny);
+
+                        if (id !== 0 && id !== 255 && id !== 1 && id !== 7) { // Don't push walls/stone
+                            // Push Vector
+                            const dist = Math.sqrt(dist2);
+                            const force = (shockRadius - dist) / (shockRadius - radius); // 1.0 at inner, 0.0 at outer
+
+                            if (force > 0.1) {
+                                // Push Distance
+                                const pushDist = Math.max(1, Math.floor(force * radius * 0.5));
+
+                                const dirX = dx / dist;
+                                const dirY = dy / dist;
+
+                                const tx = Math.round(nx + dirX * pushDist);
+                                const ty = Math.round(ny + dirY * pushDist);
+
+                                if (grid.get(tx, ty) === 0) {
+                                    // Move particle physically
+                                    grid.move(nx, ny, tx, ty);
+                                    // Add upward velocity if kicking up
+                                    if (dirY < 0) {
+                                        grid.setVelocity(tx, ty, -5 * force);
+                                    }
+                                } else {
+                                    // Try to swap? No, makes a mess. Just fail.
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+export class C4 extends Material {
+    id = 21;
+    name = "C4";
+    color = 0xDDDDDD; // Off-white plastic explosive
+
+    update(grid: Grid, x: number, y: number): boolean {
+        // C4 is static solid (doesn't fall)
+        // Checks for Fire/Electric trigger
+
+        const neighbors = [
+            { dx: 0, dy: -1 },
+            { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 },
+            { dx: 1, dy: 0 },
+        ];
+
+        for (const n of neighbors) {
+            const id = grid.get(x + n.dx, y + n.dy);
+            if (id === 10 || id === 13 || id === 14) { // Fire, Ember, Lava
+                this.explode(grid, x, y);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private explode(grid: Grid, cx: number, cy: number) {
+        // C4 has HUGE radius
+        const radius = 15;
+        EnergeticsUtils.explode(grid, cx, cy, radius, 21);
     }
 }

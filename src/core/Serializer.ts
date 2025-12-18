@@ -82,7 +82,8 @@ export class Serializer {
 
         const width = data[ptr++] | (data[ptr++] << 8);
         const height = data[ptr++] | (data[ptr++] << 8);
-        const flags = data[ptr++]; // Unused for now
+        // const flags = data[ptr++]; // Unused for now
+        ptr++; // Skip flags byte
 
         // We could resize the grid here if we wanted to support loading different sizes.
         // For now, let's warn or clear if dimensions don't match, 
@@ -97,6 +98,8 @@ export class Serializer {
         let cellIndex = 0;
         const maxIndex = grid.width * grid.height;
 
+        let totalParticles = 0;
+
         while (ptr < data.length) {
             if (cellIndex >= maxIndex) break;
 
@@ -109,6 +112,7 @@ export class Serializer {
             // But if we didn't clear (or if we want to overwrite), we set.
             if (val !== 0) {
                 grid.cells.fill(val, cellIndex, end);
+                totalParticles += (end - cellIndex);
                 // We also need to wake chunks for these new particles
                 // It's expensive to wake individually. 
                 // Better to fill first, then wake active areas?
@@ -144,5 +148,8 @@ export class Serializer {
 
         // After loading, swap chunks to ensure state is consistent
         grid.swapChunks();
+
+        // Update particle count exactly once after bulk lead
+        grid.modifyParticleCount(totalParticles);
     }
 }

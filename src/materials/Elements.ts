@@ -1,10 +1,15 @@
 import { Grid } from '../core/Grid';
 import { Material } from './Material';
 
-export class Lava extends Material {
+import { Liquid } from './Liquid';
+
+export class Lava extends Liquid {
     id = 14;
     name = "Lava";
     color = 0xFF4411; // Hot Red-Orange
+    density = 20; // Heavier than Acid(15) and Water(10)
+    dispersion = 3;
+    flowRate = 0.15; // Very viscous
 
     update(grid: Grid, x: number, y: number): boolean {
         // Lava flows like slow water, ignites things, hardens with water
@@ -18,21 +23,24 @@ export class Lava extends Material {
         ];
 
         for (const n of neighbors) {
-            const id = grid.get(x + n.dx, y + n.dy);
+            const nx = x + n.dx;
+            const ny = y + n.dy;
+            const id = grid.get(nx, ny);
+
             if (id === 3) { // Water
                 // Create stone and steam
                 grid.set(x, y, 1); // This lava becomes Stone
-                grid.set(x + n.dx, y + n.dy, 7); // Water becomes Steam
+                grid.set(nx, ny, 7); // Water becomes Steam
                 return true;
             }
             // Ignite flammables
             if (id === 9 && Math.random() < 0.5) { // Oil
-                grid.set(x + n.dx, y + n.dy, 10); // Fire
+                grid.set(nx, ny, 10); // Fire
             } else if (id === 5 && Math.random() < 0.2) { // Wood
-                grid.set(x + n.dx, y + n.dy, 13); // Ember
-                grid.setVelocity(x + n.dx, y + n.dy, 0.5);
+                grid.set(nx, ny, 13); // Ember
+                grid.setVelocity(nx, ny, 0.5);
             } else if (id === 11) { // Gunpowder - explode!
-                grid.set(x + n.dx, y + n.dy, 10); // Will trigger explosion
+                grid.set(nx, ny, 10); // Will trigger explosion
             }
         }
 
@@ -44,57 +52,8 @@ export class Lava extends Material {
             }
         }
 
-        // 3. Slow liquid movement
-        let velocity = grid.getVelocity(x, y);
-        velocity += 0.3; // Slower than water
-        if (velocity > 4) velocity = 4; // Lower terminal velocity
-
-        const steps = Math.floor(velocity);
-        let moved = false;
-        let currentX = x;
-        let currentY = y;
-        let hitGround = false;
-
-        for (let i = 0; i < steps; i++) {
-            const nextY = currentY + 1;
-            const below = grid.get(currentX, nextY);
-
-            if (below === 0) {
-                grid.move(currentX, currentY, currentX, nextY);
-                moved = true;
-                currentY = nextY;
-            } else {
-                velocity = 0;
-                hitGround = true;
-                break;
-            }
-        }
-
-        if (!hitGround) {
-            grid.setVelocity(currentX, currentY, velocity);
-            return true;
-        } else {
-            grid.setVelocity(currentX, currentY, 0);
-        }
-
-        // 4. Slow horizontal spread
-        const dispersion = 3;
-        const dir = Math.random() < 0.5 ? 1 : -1;
-
-        for (let i = 1; i <= dispersion; i++) {
-            const targetX = currentX + (dir * i);
-            const content = grid.get(targetX, currentY);
-            if (content === 0) {
-                grid.move(currentX, currentY, targetX, currentY);
-                return true;
-            } else if (content === this.id) {
-                continue;
-            } else {
-                break;
-            }
-        }
-
-        return moved;
+        // 3. Use Liquid movement
+        return super.update(grid, x, y);
     }
 }
 

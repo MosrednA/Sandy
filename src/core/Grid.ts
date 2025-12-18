@@ -203,4 +203,13 @@ export class Grid {
         this.activeChunks.set(this.chunks);
         this.chunks.fill(0);
     }
+
+    /**
+     * Helper to manually adjust particle count (e.g. after bulk loading).
+     */
+    modifyParticleCount(delta: number): void {
+        if (this.syncView && delta !== 0) {
+            Atomics.add(this.syncView, PARTICLE_COUNT_INDEX, delta);
+        }
+    }
 }

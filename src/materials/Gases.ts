@@ -36,9 +36,9 @@ export class Steam extends Material {
             if (content === 0) {
                 grid.move(x, y, targetX, targetY);
                 return true;
-            } else if (content === 3) { // Water (Condense?)
-                // Maybe turn back to water if hitting water?
-                if (Math.random() < 0.1) {
+            } else if (content === 3 || content === 15) { // Water or Ice
+                // Condense back to water
+                if (Math.random() < 0.2) { // 20% chance
                     grid.set(x, y, 3);
                     return true;
                 }

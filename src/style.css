@@ -283,7 +283,8 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 /* Save Load UI */
-#save-load-overlay {
+#save-load-overlay,
+#demo-overlay {
   position: fixed;
   top: 0;
   left: 0;

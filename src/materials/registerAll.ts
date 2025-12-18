@@ -2,9 +2,9 @@ import { materialRegistry } from './MaterialRegistry';
 import { Empty, Stone } from './Solids';
 import { Sand } from './Sand';
 import { Water } from './Water';
-import { Acid, Oil } from './Liquids';
+import { Acid, Oil, Slime } from './Liquids';
 import { Steam, Smoke, HotSmoke } from './Gases';
-import { Fire, Gunpowder } from './Energetics';
+import { Fire, Gunpowder, C4 } from './Energetics';
 import { Wood, Ember } from './Wood';
 import { Lava, Ice, Gas } from './Elements';
 import { BlackHole } from './Special';
@@ -22,6 +22,7 @@ export function registerAllMaterials() {
     materialRegistry.register(new Acid());
     materialRegistry.register(new Steam()); // ID 7
     materialRegistry.register(new Oil());   // ID 9
+    materialRegistry.register(new Slime()); // ID 20
     materialRegistry.register(new Fire());  // ID 10
     materialRegistry.register(new Gunpowder()); // ID 11
     materialRegistry.register(new Wood()); // ID 5
@@ -32,4 +33,5 @@ export function registerAllMaterials() {
     materialRegistry.register(new Ice()); // ID 15
     materialRegistry.register(new Gas()); // ID 17
     materialRegistry.register(new BlackHole()); // ID 18
+    materialRegistry.register(new C4()); // ID 21
 }
