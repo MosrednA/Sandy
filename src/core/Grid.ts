@@ -16,6 +16,7 @@ export class Grid {
     chunks: Uint8Array; // 1 = Active, 0 = Sleeping (Next Frame)
     activeChunks: Uint8Array; // 1 = Active, 0 = Sleeping (Current Frame)
     velocity: Float32Array;
+    temperature: Float32Array; // NEW: Per-particle temperature
     frameCount: number = 0;
 
     // Shared sync buffer for atomic operations
@@ -24,6 +25,7 @@ export class Grid {
     constructor(width: number, height: number, buffers?: {
         grid: SharedArrayBuffer,
         velocity: SharedArrayBuffer,
+        temperature: SharedArrayBuffer,
         chunkState: SharedArrayBuffer,
         sync?: SharedArrayBuffer
     }) {
@@ -36,6 +38,7 @@ export class Grid {
         if (buffers) {
             this.cells = new Uint8Array(buffers.grid);
             this.velocity = new Float32Array(buffers.velocity);
+            this.temperature = new Float32Array(buffers.temperature);
             this.chunks = new Uint8Array(buffers.chunkState);
             if (buffers.sync) {
                 this.syncView = new Int32Array(buffers.sync);
@@ -43,6 +46,7 @@ export class Grid {
         } else {
             this.cells = new Uint8Array(width * height);
             this.velocity = new Float32Array(width * height);
+            this.temperature = new Float32Array(width * height);
             this.chunks = new Uint8Array(this.cols * this.rows).fill(1);
         }
 
@@ -69,6 +73,18 @@ export class Grid {
         }
     }
 
+    // Temperature methods
+    getTemp(x: number, y: number): number {
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) return 20; // Room temp
+        return this.temperature[y * this.width + x];
+    }
+
+    setTemp(x: number, y: number, t: number): void {
+        if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+            this.temperature[y * this.width + x] = t;
+        }
+    }
+
     /**
      * Moves a particle including its data (velocity).
      */
@@ -83,6 +99,10 @@ export class Grid {
         // Move Velocity
         this.velocity[idx2] = this.velocity[idx1];
         this.velocity[idx1] = 0;
+
+        // Move Temperature
+        this.temperature[idx2] = this.temperature[idx1];
+        this.temperature[idx1] = 20; // Reset to room temp
 
         this.wake(x1, y1);
         this.wake(x2, y2);
@@ -102,6 +122,11 @@ export class Grid {
         const tmpVel = this.velocity[idx1];
         this.velocity[idx1] = this.velocity[idx2];
         this.velocity[idx2] = tmpVel;
+
+        // Swap Temperature
+        const tmpTemp = this.temperature[idx1];
+        this.temperature[idx1] = this.temperature[idx2];
+        this.temperature[idx2] = tmpTemp;
 
         this.wake(x1, y1);
         this.wake(x2, y2);
@@ -126,6 +151,7 @@ export class Grid {
 
             this.cells[idx] = id;
             this.velocity[idx] = 0; // Reset velocity on manual set
+            this.temperature[idx] = 20; // Reset to room temp
             this.wake(x, y);
         }
     }
@@ -147,6 +173,7 @@ export class Grid {
 
         this.cells[index] = id;
         this.velocity[index] = 0; // Reset velocity
+        this.temperature[index] = 20; // Reset to room temp
         // Bitwise floor is faster than Math.floor for positive integers
         const x = index - ((index / this.width) | 0) * this.width; // x = index % width (faster)
         const y = (index / this.width) | 0;
@@ -160,6 +187,7 @@ export class Grid {
     clear(): void {
         this.cells.fill(0);
         this.velocity.fill(0);
+        this.temperature.fill(20); // Reset to room temp
         this.chunks.fill(0);
         this.activeChunks.fill(0);
         if (this.syncView) {

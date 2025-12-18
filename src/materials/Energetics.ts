@@ -11,6 +11,9 @@ export class Fire extends Material {
     update(grid: Grid, x: number, y: number): boolean {
         // Fire rises and spreads to flammables, then dies out
 
+        // HEAT: Fire emits +500° temperature
+        grid.setTemp(x, y, 500);
+
         // 1. Decay (Fire is short-lived but creates nice flames)
         if (Math.random() < 0.10) { // 10% chance per frame to die (was 3%) - Limits spark range
             // Turn into smoke - increased smoke production
@@ -22,39 +25,20 @@ export class Fire extends Material {
             return true;
         }
 
-        // 2. Spread to flammables and melt ice
+        // 2. Spread to flammables (temperature handles Ice/Coal/Gunpowder)
         for (const n of Neighbors.ALL) {
             const nx = x + n.dx;
             const ny = y + n.dy;
             const id = grid.get(nx, ny);
 
-            if (id === MaterialId.OIL) {
-                if (Math.random() < 0.3) {
-                    grid.set(nx, ny, MaterialId.FIRE);
-                }
-            } else if (id === MaterialId.WOOD) {
-                if (Math.random() < 0.08) {
-                    grid.set(nx, ny, MaterialId.EMBER);
-                    grid.setVelocity(nx, ny, 0.4);
-                }
-            } else if (id === MaterialId.GUNPOWDER) {
-                this.explode(grid, nx, ny);
-            } else if (id === MaterialId.ICE) {
-                // Fire melts Ice → Water
-                if (Math.random() < 0.15) {
-                    grid.set(nx, ny, MaterialId.WATER);
-                }
-            } else if (id === MaterialId.COAL) {
-                // Fire ignites Coal → Ember (slow to catch)
-                if (Math.random() < 0.03) {
-                    grid.set(nx, ny, MaterialId.EMBER);
-                    grid.setVelocity(nx, ny, 1.2); // Higher heat for longer burn
-                }
-            } else if (id === MaterialId.POISON) { // Slime
-                // Slime is flammable!
-                if (Math.random() < 0.1) {
-                    grid.set(nx, ny, MaterialId.FIRE);
-                }
+            if (id === MaterialId.OIL && Math.random() < 0.3) {
+                grid.set(nx, ny, MaterialId.FIRE);
+            } else if (id === MaterialId.WOOD && Math.random() < 0.1) {
+                grid.set(nx, ny, MaterialId.EMBER);
+                grid.setVelocity(nx, ny, 0.4);
+            } else if (id === MaterialId.POISON && Math.random() < 0.15) {
+                // Slime is flammable
+                grid.set(nx, ny, MaterialId.FIRE);
             }
         }
 
@@ -81,11 +65,6 @@ export class Fire extends Material {
 
         return false;
     }
-
-    private explode(grid: Grid, cx: number, cy: number) {
-        const radius = 3 + Math.floor(Math.random() * 2); // Reduced from 5-8 to 3-5
-        EnergeticsUtils.explode(grid, cx, cy, radius, MaterialId.FIRE);
-    }
 }
 
 export class Gunpowder extends Material {
@@ -94,12 +73,31 @@ export class Gunpowder extends Material {
     color = 0x2A2A2A; // Dark Gunpowder
 
     update(grid: Grid, x: number, y: number): boolean {
-        // Gunpowder behaves like Sand but explodes when touched by Fire
+        // Gunpowder behaves like Sand but explodes when hot
 
-        // Check for Fire neighbors
-        for (const n of Neighbors.CARDINAL) {
+        // Temperature-based explosion (>150°)
+        const temp = grid.getTemp(x, y);
+        if (temp > 150) {
+            this.explode(grid, x, y);
+            return true;
+        }
+
+        // Check neighbors for special interactions
+        const neighbors = [
+            { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+        ];
+        for (const n of neighbors) {
             const id = grid.get(x + n.dx, y + n.dy);
-            if (id === MaterialId.FIRE) {
+            // Water neutralizes gunpowder (gets wet, useless)
+            if (id === MaterialId.WATER) {
+                if (Math.random() < 0.1) {
+                    grid.set(x, y, MaterialId.SAND); // Becomes useless
+                    return true;
+                }
+            }
+            // Acid causes combustion!
+            else if (id === MaterialId.ACID) {
                 this.explode(grid, x, y);
                 return true;
             }
@@ -263,19 +261,18 @@ export class C4 extends Material {
     color = 0xDDDDDD; // Off-white plastic explosive
 
     update(grid: Grid, x: number, y: number): boolean {
-        for (const n of Neighbors.CARDINAL) {
-            const id = grid.get(x + n.dx, y + n.dy);
-            if (id === MaterialId.FIRE || id === MaterialId.EMBER || id === MaterialId.LAVA) {
-                this.explode(grid, x, y);
-                return true;
-            }
+        // Temperature-based detonation (>100° - very sensitive!)
+        const temp = grid.getTemp(x, y);
+        if (temp > 100) {
+            this.explode(grid, x, y);
+            return true;
         }
         return false;
     }
 
     private explode(grid: Grid, cx: number, cy: number) {
-        // C4 has large radius (reduced from 15 to 10)
-        const radius = 10;
+        // C4 has massive radius - BOOM!
+        const radius = 18;
         EnergeticsUtils.explode(grid, cx, cy, radius, MaterialId.C4);
     }
 }

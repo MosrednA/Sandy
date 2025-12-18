@@ -10,6 +10,16 @@ export class Wood extends Material {
     update(grid: Grid, x: number, y: number): boolean {
         // Wood is a static solid that starts smoldering when touched by fire/ember
 
+        // Temperature-based auto-ignition (>300°)
+        const temp = grid.getTemp(x, y);
+        if (temp > 300) {
+            if (Math.random() < 0.03) { // 3% chance per frame
+                grid.set(x, y, MaterialId.EMBER);
+                grid.setVelocity(x, y, 0.5);
+                return true;
+            }
+        }
+
         // Check for neighboring fire or ember
         const neighbors = [
             { dx: 0, dy: -1 },
@@ -20,18 +30,17 @@ export class Wood extends Material {
 
         for (const n of neighbors) {
             const id = grid.get(x + n.dx, y + n.dy);
-            if (id === MaterialId.FIRE) { // Fire - immediately start smoldering
+            if (id === MaterialId.FIRE) {
                 if (Math.random() < 0.15) {
-                    grid.set(x, y, MaterialId.EMBER); // Turn to Ember
-                    grid.setVelocity(x, y, 0.3); // Start with some heat
+                    grid.set(x, y, MaterialId.EMBER);
+                    grid.setVelocity(x, y, 0.3);
                     return true;
                 }
-            } else if (id === MaterialId.EMBER) { // Ember - slowly heat up
-                // Get neighbor's heat and transfer some
+            } else if (id === MaterialId.EMBER) {
                 const neighborHeat = grid.getVelocity(x + n.dx, y + n.dy);
                 if (neighborHeat > 0.5 && Math.random() < 0.02) {
-                    grid.set(x, y, MaterialId.EMBER); // Start smoldering
-                    grid.setVelocity(x, y, 0.1); // Start with low heat
+                    grid.set(x, y, MaterialId.EMBER);
+                    grid.setVelocity(x, y, 0.1);
                     return true;
                 }
             }
@@ -48,16 +57,37 @@ export class Ember extends Material {
     color = 0xFF5500; // Burning Ember
 
     update(grid: Grid, x: number, y: number): boolean {
-        // Ember is smoldering wood that slowly heats up and can emit fire
+        // Ember is smoldering wood that reacts to temperature
 
-        // Get current heat (stored in velocity)
+        // Get current internal heat state (stored in velocity, 0.0 - 1.5)
         let heat = grid.getVelocity(x, y);
+        const gridTemp = grid.getTemp(x, y);
 
-        // Slowly increase heat over time
-        heat += 0.01 + Math.random() * 0.01;
+        // React to grid temperature
+        if (gridTemp < 100) {
+            // Cool down if environment is cold (e.g. Water nearby)
+            heat -= 0.05;
+        } else {
+            // Slowly increase heat if active, fueling itself
+            heat += 0.01 + Math.random() * 0.01;
+        }
 
         // Clamp heat
         if (heat > 1.5) heat = 1.5;
+
+        // EXTINGUISH: If too cold, turn back to Coal (charcoal)
+        if (heat <= 0) {
+            grid.set(x, y, MaterialId.COAL);
+            // If water presence caused this, create some steam
+            if (gridTemp < 50 && Math.random() < 0.3) {
+                grid.set(x, y, MaterialId.STEAM);
+            }
+            return true;
+        }
+
+        // HEAT: Ember emits temperature proportional to its heat
+        // If glowing hot, emit lots of heat. If cooling, emit less.
+        grid.setTemp(x, y, 200 + heat * 100); // 200-350°
 
         // Update color based on heat (darker when cooler, brighter when hotter)
         // We can't change color dynamically easily, but the behavior changes

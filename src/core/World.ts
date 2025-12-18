@@ -9,6 +9,7 @@ export class World {
     constructor(width?: number, height?: number, buffers?: {
         grid: SharedArrayBuffer,
         velocity: SharedArrayBuffer,
+        temperature: SharedArrayBuffer,
         chunkState: SharedArrayBuffer,
         sync?: SharedArrayBuffer
     }) {

@@ -14,7 +14,12 @@ export class Lava extends Liquid {
     update(grid: Grid, x: number, y: number): boolean {
         // Lava flows like slow water, ignites things, hardens with water
 
-        // 1. Check for water contact - turn both to Stone
+        // 1. Check current temperature (Is it cooling down?)
+        // We check this BEFORE setting it back to 1000, so we can detect conduction cooling.
+        const temp = grid.getTemp(x, y);
+
+        // 2. Check for water contact - turn both to Stone (Physical phase change interaction)
+        // Only if Lava has actually cooled down (Simulating thermal inertia/crust formation)
         const neighbors = [
             { dx: 0, dy: -1 },
             { dx: 0, dy: 1 },
@@ -28,34 +33,21 @@ export class Lava extends Liquid {
             const id = grid.get(nx, ny);
 
             if (id === MaterialId.WATER) {
-                // Create magma rock and steam
-                grid.set(x, y, MaterialId.MAGMA_ROCK);
-                grid.set(nx, ny, MaterialId.STEAM);
-                return true;
-            }
-            // Ignite flammables
-            if (id === MaterialId.OIL && Math.random() < 0.5) {
-                grid.set(nx, ny, MaterialId.FIRE);
-            } else if (id === MaterialId.WOOD && Math.random() < 0.2) {
-                grid.set(nx, ny, MaterialId.EMBER);
-                grid.setVelocity(nx, ny, 0.5);
-            } else if (id === MaterialId.GUNPOWDER || id === MaterialId.C4) {
-                // Gunpowder/C4 - detonate!
-                grid.set(nx, ny, MaterialId.FIRE);
-            } else if (id === MaterialId.COAL && Math.random() < 0.08) {
-                // Lava ignites Coal quickly
-                grid.set(nx, ny, MaterialId.EMBER);
-                grid.setVelocity(nx, ny, 1.2); // Long burn
-            } else if (id === MaterialId.POISON && Math.random() < 0.15) {
-                // Slime is flammable
-                grid.set(nx, ny, MaterialId.FIRE);
-            } else if (id === MaterialId.ICE) {
-                // Lava melts ice instantly
-                grid.set(nx, ny, MaterialId.STEAM);
+                // Reaction: Lava + Water -> Magma Rock + Steam
+                // Temperature Based: Only harden if we are losing heat (temp < liquid threshold)
+                // We use 900° as threshold (Lava is nominally 1000°)
+                if (temp < 950) { // If we lost >50° to the water
+                    // Chance simulates "Time to freeze" (Thermal Capactiy)
+                    if (Math.random() < 0.1) { // 10% chance if cooling
+                        grid.set(x, y, MaterialId.MAGMA_ROCK);
+                        grid.set(nx, ny, MaterialId.STEAM);
+                        return true;
+                    }
+                }
             }
         }
 
-        // 2. Emit fire/smoke occasionally
+        // 3. Emit fire/smoke occasionally
         if (Math.random() < 0.01) {
             const above = grid.get(x, y - 1);
             if (above === MaterialId.EMPTY) {
@@ -63,7 +55,11 @@ export class Lava extends Liquid {
             }
         }
 
-        // 3. Use Liquid movement
+        // 4. Reset Heat Source (Lava maintain its heat unless fully cooled)
+        // Note: In a full thermodynamic sim, we wouldn't do this, but for "Sandbox Lava", it generates heat.
+        grid.setTemp(x, y, 1000);
+
+        // 5. Use Liquid movement
         return super.update(grid, x, y);
     }
 }
@@ -74,31 +70,30 @@ export class Ice extends Material {
     color = 0x88CCEE; // Cyan Ice
 
     update(grid: Grid, x: number, y: number): boolean {
-        // Ice freezes nearby water and melts near fire
+        // COLD: Ice emits -50° temperature
+        grid.setTemp(x, y, -50);
 
-        const neighbors = [
-            { dx: 0, dy: -1 },
-            { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 },
-            { dx: 1, dy: 0 },
-        ];
-
-        for (const n of neighbors) {
-            const id = grid.get(x + n.dx, y + n.dy);
-
-            // Melt near fire/lava/ember
-            if (id === MaterialId.FIRE || id === MaterialId.LAVA || id === MaterialId.EMBER) {
-                grid.set(x, y, MaterialId.WATER); // Turn to Water
+        // Temperature-based melting (>0°)
+        const temp = grid.getTemp(x, y);
+        if (temp > 0) {
+            if (Math.random() < 0.1) { // 10% melt rate when warm
+                grid.set(x, y, MaterialId.WATER);
                 return true;
-            }
-
-            // Freeze nearby water
-            if (id === MaterialId.WATER && Math.random() < 0.02) {
-                grid.set(x + n.dx, y + n.dy, MaterialId.ICE); // Turn to Ice
             }
         }
 
-        // Ice is solid - doesn't move
+        // Freeze nearby water
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        ];
+        for (const n of neighbors) {
+            const id = grid.get(x + n.dx, y + n.dy);
+            if (id === MaterialId.WATER && Math.random() < 0.02) {
+                grid.set(x + n.dx, y + n.dy, MaterialId.ICE);
+            }
+        }
+
         return false;
     }
 }
@@ -112,22 +107,12 @@ export class Gas extends Material {
     update(grid: Grid, x: number, y: number): boolean {
         // Gas rises and explodes when ignited
 
-        // Check for fire - explode!
-        const neighbors = [
-            { dx: 0, dy: -1 },
-            { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 },
-            { dx: 1, dy: 0 },
-        ];
-
-        for (const n of neighbors) {
-            const id = grid.get(x + n.dx, y + n.dy);
-            if (id === MaterialId.FIRE || id === MaterialId.LAVA || id === MaterialId.EMBER) {
-                // Only ignite 30% of the time - slower propagation
-                if (Math.random() < 0.3) {
-                    this.ignite(grid, x, y);
-                    return true;
-                }
+        // Temperature-based ignition (>200°)
+        const temp = grid.getTemp(x, y);
+        if (temp > 200) {
+            if (Math.random() < 0.3) {
+                this.ignite(grid, x, y);
+                return true;
             }
         }
 
@@ -196,28 +181,61 @@ export class MagmaRock extends Material {
     id = MaterialId.MAGMA_ROCK;
     name = "MagmaRock";
     color = 0x442222; // Dark reddish-brown
+    density = 30; // Heavier than Lava(20) and Water(10)
 
     update(grid: Grid, x: number, y: number): boolean {
-        // Check for heat sources - remelt into Lava
-        const neighbors = [
-            { dx: 0, dy: -1 },
-            { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 },
-            { dx: 1, dy: 0 },
-        ];
-
-        for (const n of neighbors) {
-            const id = grid.get(x + n.dx, y + n.dy);
-            // Heat sources: Fire, Lava, Ember
-            if (id === MaterialId.FIRE || id === MaterialId.LAVA || id === MaterialId.EMBER) {
-                if (Math.random() < 0.05) { // 5% chance per frame to remelt
-                    grid.set(x, y, MaterialId.LAVA);
-                    return true;
-                }
+        // Temperature-based remelting (>800°)
+        const temp = grid.getTemp(x, y);
+        if (temp > 800) {
+            if (Math.random() < 0.1) { // 10% remelt when hot enough
+                grid.set(x, y, MaterialId.LAVA);
+                return true;
             }
         }
 
-        // Solid - doesn't move
+        // Gravity: Sink in liquids and fall through empty space
+
+        // 1. Check straight down
+        const dy = y + 1;
+        if (dy < grid.height) {
+            const below = grid.get(x, dy);
+
+            // Fall into empty
+            if (below === MaterialId.EMPTY) {
+                grid.move(x, y, x, dy);
+                return true;
+            }
+
+            // Sink in Liquids (Water, Lava, Oil)
+            // Retrieve material to check if it's liquid? 
+            // Or just check specific IDs we know.
+            if (below === MaterialId.WATER || below === MaterialId.LAVA || below === MaterialId.OIL) {
+                // MagmaRock is heavier (density ~30) than all these
+                grid.swap(x, y, x, dy);
+                return true;
+            }
+        }
+
+        // 2. Tumble diagonal
+        // If blocked, try to simulate pile mechanics
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        const dx = x + dir;
+        const dy2 = y + 1;
+
+        if (dx >= 0 && dx < grid.width && dy2 < grid.height) {
+            const belowDiag = grid.get(dx, dy2);
+            if (belowDiag === MaterialId.EMPTY) {
+                grid.move(x, y, dx, dy2);
+                return true;
+            } else if (belowDiag === MaterialId.WATER || belowDiag === MaterialId.LAVA || belowDiag === MaterialId.OIL) {
+                grid.swap(x, y, dx, dy2);
+                return true;
+            }
+        }
+
+        // Look for other side if first side failed?
+        // Simplification: just one side check per frame is enough for piles
+
         return false;
     }
 }
@@ -229,50 +247,18 @@ export class Cryo extends Material {
     color = 0x88FFFF; // Bright cyan
 
     update(grid: Grid, x: number, y: number): boolean {
-        // 1. Affect nearby particles
-        const neighbors = [
-            { dx: 0, dy: -1 },
-            { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 },
-            { dx: 1, dy: 0 },
-        ];
+        // COLD: Cryo emits -100° temperature (coldest!)
+        grid.setTemp(x, y, -100);
 
-        for (const n of neighbors) {
-            const nx = x + n.dx;
-            const ny = y + n.dy;
-            const id = grid.get(nx, ny);
-
-            // Extinguish fire/ember
-            if (id === MaterialId.FIRE || id === MaterialId.EMBER) {
-                grid.set(nx, ny, MaterialId.SMOKE);
-                grid.set(x, y, MaterialId.EMPTY); // Cryo consumed
-                return true;
-            }
-            // Freeze water to ice
-            if (id === MaterialId.WATER && Math.random() < 0.1) {
-                grid.set(nx, ny, MaterialId.ICE);
-            }
-            // Freeze steam to ice
-            if (id === MaterialId.STEAM && Math.random() < 0.15) {
-                grid.set(nx, ny, MaterialId.ICE);
-            }
-            // Cool lava to magma rock
-            if (id === MaterialId.LAVA && Math.random() < 0.15) {
-                grid.set(nx, ny, MaterialId.MAGMA_ROCK);
-                grid.set(x, y, MaterialId.EMPTY); // Consumed
-                return true;
-            }
-        }
-
-        // 2. Decay
+        // Decay
         if (Math.random() < 0.015) {
             grid.set(x, y, MaterialId.EMPTY);
             return true;
         }
 
-        // 3. Rise like gas (but faster than smoke)
+        // Rise like gas
         if (Math.random() > 0.5) {
-            return false; // Only move 50% of frames
+            return false;
         }
 
         const dirX = Math.floor(Math.random() * 3) - 1;
@@ -305,23 +291,13 @@ export class Coal extends Material {
     color = 0x222222; // Very dark gray
 
     update(grid: Grid, x: number, y: number): boolean {
-        // Check for ignition from fire/lava/ember
-        const neighbors = [
-            { dx: 0, dy: -1 },
-            { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 },
-            { dx: 1, dy: 0 },
-        ];
-
-        for (const n of neighbors) {
-            const id = grid.get(x + n.dx, y + n.dy);
-            if (id === MaterialId.FIRE || id === MaterialId.LAVA || id === MaterialId.EMBER) {
-                // Turn into ember (slow burn)
-                if (Math.random() < 0.02) {
-                    grid.set(x, y, MaterialId.EMBER);
-                    grid.setVelocity(x, y, 0.8);
-                    return true;
-                }
+        // Temperature-based ignition (>250°)
+        const temp = grid.getTemp(x, y);
+        if (temp > 250) {
+            if (Math.random() < 0.05) { // 5% ignition when hot
+                grid.set(x, y, MaterialId.EMBER);
+                grid.setVelocity(x, y, 0.8); // Long burn
+                return true;
             }
         }
 

@@ -201,7 +201,11 @@ export abstract class Liquid extends Material {
                     grid.move(x, y, targetX, dyDown);
                     return true;
                 } else {
-                    // Displace lighter liquid down-diagonal
+                    // Displace lighter liquid OR GAS down-diagonal
+                    if (isGas(runningInto)) {
+                        grid.swap(x, y, targetX, dyDown);
+                        return true;
+                    }
                     const other = materialRegistry.get(runningInto);
                     if (other && other.density !== undefined && other.density < this.density) {
                         grid.swap(x, y, targetX, dyDown);
@@ -229,7 +233,11 @@ export abstract class Liquid extends Material {
             } else if (content === this.id) {
                 continue; // Slide through self
             } else {
-                // Displace lighter liquid sideways
+                // Displace lighter liquid OR GAS sideways
+                if (isGas(content)) {
+                    grid.swap(x, y, tx, y);
+                    return true;
+                }
                 const other = materialRegistry.get(content);
                 if (other && other.density !== undefined && other.density < this.density) {
                     grid.swap(x, y, tx, y);
@@ -251,12 +259,11 @@ export abstract class Liquid extends Material {
                     grid.move(x, y, targetX, dyUp);
                     return true;
                 } else {
-                    // Displace lighter stuff upwards? (e.g. Oil floating up through Water)
-                    // If we are Water and Oil is above-side, we should swap?
-                    // No, if we are heavier, we go DOWN.
-                    // But if we are Heavier (Water) and Lighter (Oil) is blocking our UP path?
-                    // Actually, if we are pressurized, we push UP.
-                    // If Oil is there, we push it out of the way.
+                    // Displace lighter stuff upwards
+                    if (isGas(runningInto)) {
+                        grid.swap(x, y, targetX, dyUp);
+                        return true;
+                    }
                     const other = materialRegistry.get(runningInto);
                     if (other && other.density !== undefined && other.density < this.density) {
                         grid.swap(x, y, targetX, dyUp);

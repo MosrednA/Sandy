@@ -37,13 +37,20 @@ export class Steam extends Material {
             if (content === MaterialId.EMPTY) {
                 grid.move(x, y, targetX, targetY);
                 return true;
-            } else if (content === MaterialId.WATER || content === MaterialId.ICE || content === MaterialId.CRYO) {
-                // Condense back to water on cold surfaces
+            }
+
+            // Temperature-based condensation (<100°)
+            // If steam cools down (due to air or cold surfaces), it turns back to water
+            const temp = grid.getTemp(x, y);
+            if (temp < 100) {
                 if (Math.random() < 0.2) {
                     grid.set(x, y, MaterialId.WATER);
+                    // Temp is preserved effectively since water is ok with <100
                     return true;
                 }
-            } else if (content !== MaterialId.EMPTY && content !== MaterialId.WALL) {
+            }
+
+            if (content !== MaterialId.EMPTY && content !== MaterialId.WALL) {
                 // If blocked, try just side?
                 const sideContent = grid.get(targetX, y);
                 if (sideContent === MaterialId.EMPTY) {
@@ -109,6 +116,9 @@ export class HotSmoke extends Material {
 
     update(grid: Grid, x: number, y: number): boolean {
         // Hot Smoke rises like smoke but quickly cools down to regular smoke
+
+        // HEAT: Hot Smoke emits +150° temperature
+        grid.setTemp(x, y, 150);
 
         // Check for water contact - creates steam
         const neighbors = [

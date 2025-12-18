@@ -1,42 +1,58 @@
-# 💡 Project Ideas & Next Steps
+Per-Particle Temperature System
+Every particle has temperature. Heat conducts between neighbors. Temperature triggers state changes.
 
-## 1. 🌡️ Thermodynamics Engine
-**Goal**: Unified temperature system affecting all materials.
-- **Heat Transfer**: Neighbors exchange heat (Lava -> Stone -> Water).
-- **State Changes**: Water boils to Steam, Lava cools to Stone.
-- **Combustion**: Wood ignites based on temperature threshold, not just contact.
-- **Visuals**: Heat-based coloration (glowing glowing metals).
-
-## 2. ⚡ Electricity & Electronics
-**Goal**: Logic, circuitry, and powered mechanisms.
-- **Materials**: Wire, Battery, Semiconductor, Tesla Coil.
-- **Interactions**: Electrified water, ignition of explosives, logic gates (AND/OR).
-
-## 3. 💧 Advanced Fluid Dynamics
-**Goal**: Realistic pressure-based flow instead of simple stacking.
-- **Pressure**: Liquids equalize horizontally and push upwards in U-tubes.
-- **Viscosity**: Distinct flow rates for Honey vs. Water vs. Gas.
-- **Mixing**: Miscible vs. immiscible liquid interactions.
-
-## 4. 🧙‍♂️ "The Noita Treatment" (Gameplay)
-**Goal**: Transform the toy into a game with an active protagonist.
-- **Player Entity**: Wizard/Drone with movement physics (run, jetpack).
-- **Tools**: Wands/Guns to spawn particles or dig.
-- **Enemies**: AI blobs or creatures that interact with the sand.
-
-## 5. 🧬 Artificial Life
-**Goal**: Cellular automata and biological growth.
-- **Game of Life**: Conways' rules interactions.
-- **Plants**: Roots grow down, stems grow up, flowers bloom.
-- **Infection**: Virus material converting organic matter.
-
-## 6. 🔦 Lighting & Atmosphere
-**Goal**: Enhanced visual fidelity and immersion.
-- **Dynamic Lighting**: Fire/Lava cast real light; walls cast shadows.
-- **Day/Night Cycle**: Affects visibility and temperature.
-- **Refraction**: light bending through Glass/Water.
-
-## 7. 🏗️ Structure & Community
-**Goal**: Persistence and sharing.
-- **Online Gallery**: Upload/Download saves via the server.
-- **Blueprints**: Copy/Paste functionality for complex structures.
+Complete Material Matrix
+Heat Sources (Emit Heat)
+Material	Base Temp	Notes
+Fire	+500°	Decays, emits heat
+Ember	+300°	Slow burn
+Lava	+1000°	Persistent
+Hot Smoke	+150°	Fades quickly
+Cold Sources (Absorb Heat)
+Material	Base Temp	Notes
+Ice	-50°	Stable cold
+Cryo	-100°	Strong cooling
+Reactive Materials (State Changes)
+Material	Cold Effect	Hot Effect
+Water	→ Ice (<0°)	→ Steam (>100°)
+Ice	-	→ Water (>0°)
+Steam	→ Water (<80°)	-
+Wood	-	→ Ember (>300°)
+Coal	-	→ Ember (>250°)
+Oil	-	→ Fire (>200°)
+Gunpowder	-	→ Explode (>150°)
+C4	-	→ Explode (>100°)
+Slime	-	→ Fire (>180°)
+MagmaRock	-	→ Lava (>800°)
+Lava	→ MagmaRock (<600°)	-
+Passive Materials (Conduct Only)
+Material	Conductivity	Notes
+Stone	0.3	Slow conductor
+Sand	0.2	Poor conductor
+Smoke	0.05	Insulator
+Acid	0.5	Medium
+Empty	0.01	Almost none
+Wall	0.0	No conduction
+Special Materials
+Material	Behavior
+Black Hole	Absorbs heat (infinite sink)
+Firework	Ignites at >100°, creates heat burst
+Gas	Explodes faster when hot
+Implementation Phases
+Phase 1: Grid Temperature
+Add temperature: Float32Array to Grid
+Add get/set methods
+Temperature moves with particles
+Phase 2: Heat Sources
+Fire/Lava/Ember emit heat to self
+Ice/Cryo set cold temperature
+Phase 3: Conduction
+Each frame: blend temp with neighbors
+Weighted by material conductivity
+Phase 4: State Changes
+Check temperature thresholds
+Trigger material transformations
+Verification
+Lava melts nearby ice at distance
+Water boils to steam near fire
+Cold cryo zone visible via condensing steam

@@ -23,18 +23,27 @@ A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded ph
 - **Special**: Black Hole (attracts and consumes particles).
 - **Tools**: Erase, Brush size, Override toggle.
 
+### 🌡️ Thermodynamics System (New!)
+- **Heat Conduction**: Heat spreads across materials naturally.
+- **Phase Changes**:
+  - Ice melts > 0°
+  - Water boils > 100° (Temperature preserved!)
+  - Steam condenses < 100°
+  - Lava cools to Magma Rock (Thermal Inertia simulated)
+- **Auto-Ignition**: Wood, Oil, Coal, and Gunpowder ignite automatically at specific temperatures.
+
 ### ⚡ Interactions
-- 🔥 Fire spreads to wood, ignites oil, gas, coal, and slime
+- 🔥 Fire spreads to wood, ignites oil, gas, coal, land slime
 - 💧 Water extinguishes fire, creates steam near lava
 - 🧪 Acid dissolves materials, melts ice fast, reacts with lava
 - 🧊 Ice freezes water, melts near heat sources
-- 🌋 Lava cools to Magma Rock, remelts when heated
+- 🌋 Lava melts ice, boils water, and cools into sinking Magma Rock
 - ❄️ Cryo freezes water & steam, extinguishes fire, cools lava
 - 🪵 Burning wood creates charcoal (Coal) that can be re-ignited
 - 🎆 Fireworks launch upward and explode into sparks
 - 💥 C4 creates massive explosions with shockwaves
 - ⚫ Black Holes pull in and consume nearby particles!
-- 💨 Particles fall through gases naturally (density-based)
+- 🌫️ **Leidenfrost Effect**: Heavy liquids (Lava) displace gases (Steam) to prevent unnatural floating.
 
 ### 🚀 Performance Optimizations
 | Optimization            | Description                     |
@@ -44,6 +53,7 @@ A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded ph
 | **Pre-computed Colors** | Zero runtime color conversion   |
 | **Web Workers**         | Physics runs off main thread    |
 | **Shared Memory**       | Atomic particle counting        |
+| **Save System V2**      | Persistence of Temp & Velocity  |
 | **Glow Effects**        | Additive blending for fire/lava |
 
 ### 🎨 Visual Enhancements (Noita-Inspired)

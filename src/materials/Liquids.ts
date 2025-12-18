@@ -64,7 +64,17 @@ export class Oil extends Liquid {
     dispersion = 6;
     flowRate = 0.4; // Viscous (moves horizontally 40% of frames)
 
-    // update is inherited!
+    update(grid: Grid, x: number, y: number): boolean {
+        // Temperature-based ignition (>250°)
+        const temp = grid.getTemp(x, y);
+        if (temp > 250) {
+            if (Math.random() < 0.3) {
+                grid.set(x, y, MaterialId.FIRE);
+                return true;
+            }
+        }
+        return super.update(grid, x, y);
+    }
 }
 
 export class Slime extends Liquid {
@@ -76,10 +86,18 @@ export class Slime extends Liquid {
     flowRate = 0.1; // Extemely viscous/thick
 
     update(grid: Grid, x: number, y: number): boolean {
+        // Temperature-based ignition (>250°)
+        const temp = grid.getTemp(x, y);
+        if (temp > 250) {
+            if (Math.random() < 0.1) {
+                grid.set(x, y, MaterialId.FIRE);
+                return true;
+            }
+        }
+
         // Radioactive properties:
         // 1. Turn Water into Acid
-        // 2. Ignite Wood -> Fire
-        // 3. Mutate Stone -> Sand (slow erosion)
+        // 2. Mutate Stone -> Sand (slow erosion)
 
         // Unrolled loop to avoid object allocation {dx, dy}
         const nx1 = x + 0; const ny1 = y - 1;
@@ -92,12 +110,9 @@ export class Slime extends Liquid {
             const id = grid.get(nx, ny);
             if (id === MaterialId.WATER) {
                 if (Math.random() < 0.05) grid.set(nx, ny, MaterialId.ACID);
-            } else if (id === MaterialId.WOOD) {
-                if (Math.random() < 0.02) grid.set(nx, ny, MaterialId.FIRE);
             } else if (id === MaterialId.STONE) {
                 if (Math.random() < 0.005) {
                     grid.set(nx, ny, MaterialId.SAND); // Erode to Sand
-                    // Also maybe Slime gets consumed?
                 }
             }
         };
@@ -106,9 +121,6 @@ export class Slime extends Liquid {
         if (ny2 < grid.height) check(nx2, ny2);
         if (nx3 >= 0) check(nx3, ny3);
         if (nx4 < grid.width) check(nx4, ny4);
-
-        // Glow effect (randomly emit light/spark?)
-        // Let's just keep it simple for now.
 
         return super.update(grid, x, y);
     }

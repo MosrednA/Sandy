@@ -60,6 +60,7 @@ export class WorkerManager {
                 buffers: {
                     grid: this.sharedMemory.gridBuffer,
                     velocity: this.sharedMemory.velocityBuffer,
+                    temperature: this.sharedMemory.temperatureBuffer,
                     chunkState: this.sharedMemory.chunkStateBuffer,
                     sync: this.sharedMemory.syncBuffer
                 }

@@ -168,6 +168,7 @@ const workerManager = new WorkerManager(sharedMemory);
 const world = new World(WORLD_WIDTH, WORLD_HEIGHT, {
   grid: sharedMemory.gridBuffer,
   velocity: sharedMemory.velocityBuffer,
+  temperature: sharedMemory.temperatureBuffer,
   chunkState: sharedMemory.chunkStateBuffer,
   sync: sharedMemory.syncBuffer
 });

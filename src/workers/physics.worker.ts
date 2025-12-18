@@ -47,6 +47,7 @@ self.onmessage = (e) => {
         // Process Physics once per frame (Phase RED is start of frame)
         let particlesToSend: OffGridParticle[] | undefined;
         if (phase === Phase.RED) {
+            processHeatConduction(); // NEW: Spread heat between neighbors
             processOffGridParticles();
             particlesToSend = offGridParticles;
         }
@@ -55,6 +56,47 @@ self.onmessage = (e) => {
         self.postMessage({ type: 'DONE', workerId, particles: particlesToSend });
     }
 };
+
+// NEW: Heat conduction - spread temperature between neighboring particles
+function processHeatConduction() {
+    const grid = world.grid;
+    const width = grid.width;
+    const height = grid.height;
+    const temp = grid.temperature;
+    const cells = grid.cells;
+
+    // Conduction rate (0-1, higher = faster spread)
+    const CONDUCTION = 0.2; // 20% blend per frame (was 5%)
+
+    // Process every particle for visible effect
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const idx = y * width + x;
+            if (cells[idx] === 0) continue; // Skip empty
+
+            const currentTemp = temp[idx];
+            let avgTemp = currentTemp;
+            let count = 1;
+
+            // Check 4 cardinal neighbors
+            const up = idx - width;
+            const down = idx + width;
+            const left = idx - 1;
+            const right = idx + 1;
+
+            if (cells[up] !== 0 && cells[up] !== 255) { avgTemp += temp[up]; count++; }
+            if (cells[down] !== 0 && cells[down] !== 255) { avgTemp += temp[down]; count++; }
+            if (cells[left] !== 0 && cells[left] !== 255) { avgTemp += temp[left]; count++; }
+            if (cells[right] !== 0 && cells[right] !== 255) { avgTemp += temp[right]; count++; }
+
+            // Blend towards average
+            if (count > 1) {
+                const target = avgTemp / count;
+                temp[idx] = currentTemp + (target - currentTemp) * CONDUCTION;
+            }
+        }
+    }
+}
 
 function processOffGridParticles() {
     const grid = world.grid;
