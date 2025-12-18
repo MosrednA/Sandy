@@ -2,38 +2,10 @@ import './style.css';
 import { World } from './core/World';
 import { WebGLRenderer } from './rendering/WebGLRenderer';
 import { InputHandler } from './input/InputHandler';
-import { materialRegistry } from './materials/MaterialRegistry';
-import { Empty, Stone } from './materials/Solids';
-import { Sand } from './materials/Sand';
-import { Water } from './materials/Water';
+import { registerAllMaterials } from './materials/registerAll';
 
-
-import { Acid, Oil } from './materials/Liquids';
-import { Steam, Smoke, HotSmoke } from './materials/Gases';
-import { Fire, Gunpowder } from './materials/Energetics';
-import { Wood, Ember } from './materials/Wood';
-import { Lava, Ice, Plant, Gas } from './materials/Elements';
-import { BlackHole } from './materials/Special';
-
-// 1. Register Materials
-materialRegistry.register(new Empty());
-materialRegistry.register(new Stone());
-materialRegistry.register(new Sand());
-materialRegistry.register(new Water());
-materialRegistry.register(new Acid());
-materialRegistry.register(new Steam()); // ID 7
-materialRegistry.register(new Oil());   // ID 9
-materialRegistry.register(new Fire());  // ID 10
-materialRegistry.register(new Gunpowder()); // ID 11
-materialRegistry.register(new Wood()); // ID 5
-materialRegistry.register(new Smoke()); // ID 12
-materialRegistry.register(new HotSmoke()); // ID 19
-materialRegistry.register(new Ember()); // ID 13
-materialRegistry.register(new Lava()); // ID 14
-materialRegistry.register(new Ice()); // ID 15
-materialRegistry.register(new Plant()); // ID 16
-materialRegistry.register(new Gas()); // ID 17
-materialRegistry.register(new BlackHole()); // ID 18
+// 1. Register Materials (centralized to prevent worker sync issues)
+registerAllMaterials();
 
 // 2. Setup Canvas
 const app = document.querySelector<HTMLDivElement>('#app')!;

@@ -1,35 +1,10 @@
 import { World } from '../core/World';
 import { Phase, CHUNK_SIZE } from '../core/Constants';
 import { materialRegistry } from '../materials/MaterialRegistry';
-import { Empty, Stone } from '../materials/Solids';
-import { Sand } from '../materials/Sand';
-import { Water } from '../materials/Water';
-import { Acid, Oil } from '../materials/Liquids';
-import { Steam, Smoke, HotSmoke } from '../materials/Gases';
-import { Fire, Gunpowder } from '../materials/Energetics';
-import { Wood, Ember } from '../materials/Wood';
-import { Lava, Ice, Plant, Gas } from '../materials/Elements';
-import { BlackHole } from '../materials/Special';
+import { registerAllMaterials } from '../materials/registerAll';
 
-// Force Register
-materialRegistry.register(new Empty());
-materialRegistry.register(new Stone());
-materialRegistry.register(new Sand());
-materialRegistry.register(new Water());
-materialRegistry.register(new Acid());
-materialRegistry.register(new Steam());
-materialRegistry.register(new Oil());
-materialRegistry.register(new Fire());
-materialRegistry.register(new Gunpowder());
-materialRegistry.register(new Wood());
-materialRegistry.register(new Smoke());
-materialRegistry.register(new HotSmoke()); // ID 19
-materialRegistry.register(new Ember());
-materialRegistry.register(new Lava());
-materialRegistry.register(new Ice());
-materialRegistry.register(new Plant());
-materialRegistry.register(new Gas());
-materialRegistry.register(new BlackHole());
+// Register all materials (centralized to prevent sync issues)
+registerAllMaterials();
 
 let world: World;
 let assignedChunks: { cx: number, cy: number }[] = [];
