@@ -6,7 +6,7 @@ import { Acid, Oil } from './Liquids';
 import { Steam, Smoke, HotSmoke } from './Gases';
 import { Fire, Gunpowder } from './Energetics';
 import { Wood, Ember } from './Wood';
-import { Lava, Ice, Plant, Gas } from './Elements';
+import { Lava, Ice, Gas } from './Elements';
 import { BlackHole } from './Special';
 
 /**
@@ -30,7 +30,6 @@ export function registerAllMaterials() {
     materialRegistry.register(new Ember()); // ID 13
     materialRegistry.register(new Lava()); // ID 14
     materialRegistry.register(new Ice()); // ID 15
-    materialRegistry.register(new Plant()); // ID 16
     materialRegistry.register(new Gas()); // ID 17
     materialRegistry.register(new BlackHole()); // ID 18
 }

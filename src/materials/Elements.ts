@@ -133,64 +133,6 @@ export class Ice extends Material {
     }
 }
 
-export class Plant extends Material {
-    id = 16;
-    name = "Plant";
-    color = 0x228844; // Forest Green
-
-    update(grid: Grid, x: number, y: number): boolean {
-        // Plant grows upward when water is nearby
-
-        // Check for water nearby
-        let hasWater = false;
-        const checkRadius = 2;
-
-        outer: for (let dy = -checkRadius; dy <= checkRadius; dy++) {
-            for (let dx = -checkRadius; dx <= checkRadius; dx++) {
-                if (grid.get(x + dx, y + dy) === 3) {
-                    hasWater = true;
-                    break outer;
-                }
-            }
-        }
-
-        if (hasWater && Math.random() < 0.01) {
-            // Try to grow upward
-            const above = grid.get(x, y - 1);
-            if (above === 0) {
-                grid.set(x, y - 1, 16); // Grow plant
-                return true;
-            }
-            // Try diagonal growth
-            const dir = Math.random() < 0.5 ? -1 : 1;
-            const diagAbove = grid.get(x + dir, y - 1);
-            if (diagAbove === 0 && Math.random() < 0.3) {
-                grid.set(x + dir, y - 1, 16);
-                return true;
-            }
-        }
-
-        // Check for fire - plants burn!
-        const neighbors = [
-            { dx: 0, dy: -1 },
-            { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 },
-            { dx: 1, dy: 0 },
-        ];
-
-        for (const n of neighbors) {
-            const id = grid.get(x + n.dx, y + n.dy);
-            if (id === 10 || id === 13 || id === 14) { // Fire, Ember, Lava
-                if (Math.random() < 0.3) {
-                    grid.set(x, y, 10); // Catch fire
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-}
 
 export class Gas extends Material {
     id = 17;

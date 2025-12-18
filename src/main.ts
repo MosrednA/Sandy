@@ -53,12 +53,6 @@ app.innerHTML = `
                 </div>
             </div>
             <div class="category">
-                <span class="category-label">Nature</span>
-                <div class="material-group">
-                    <button class="mat-btn" data-id="16" data-name="Plant" data-tip="Grows upward near water. Burns." style="--btn-color: #22AA22"></button>
-                </div>
-            </div>
-            <div class="category">
                 <span class="category-label">Special</span>
                 <div class="material-group">
                     <button class="mat-btn" data-id="18" data-name="Black Hole" data-tip="Attracts and consumes particles!" style="--btn-color: #220033"></button>
