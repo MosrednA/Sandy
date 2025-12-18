@@ -18,21 +18,18 @@ A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded ph
 ## ✨ Features
 
 ### 🧱 Materials
-| Category    | Materials                              |
-| ----------- | -------------------------------------- |
-| **Solids**  | Sand, Stone, Wood, Ice                 |
-| **Liquids** | Water, Oil, Acid, Lava                 |
-| **Gases**   | Steam, Hot Smoke, Smoke, Flammable Gas |
-| **Fire**    | Fire, Ember, Gunpowder                 |
-| **Nature**  | Plant (grows with water!)              |
-| **Special** | ⚫ Black Hole (attracts particles)      |
+- **Solids**: Sand, Stone, Wood, Ice.
+- **Liquids**: Water, Oil, Acid, Lava.
+- **Gases**: Steam (rises), Smoke, Hot Smoke, Gas (explosive!).
+- **Energetics**: Fire (spreads), Gunpowder (solid explosive).
+- **Special**: Black Hole (attracts and consumes particles).
+- **Tools**: Erase, Pencil/Brush size, Override toggle.
 
 ### ⚡ Interactions
 - 🔥 Fire spreads to wood, ignites oil & gas explosively
 - 💧 Water extinguishes fire, creates steam near lava
 - 🧪 Acid dissolves materials with bubbling reactions
 - 🧊 Ice freezes water, melts near heat sources
-- 🌱 Plants grow upward when near water
 - 🌋 Lava hardens to stone in water, ignites everything
 - ⚫ Black Holes pull in and consume nearby particles!
 
