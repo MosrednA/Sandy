@@ -4,7 +4,7 @@ import { Material } from './Material';
 export class Lava extends Material {
     id = 14;
     name = "Lava";
-    color = 0xFF2200; // Bright Red-Orange
+    color = 0xFF4411; // Hot Red-Orange
 
     update(grid: Grid, x: number, y: number): boolean {
         // Lava flows like slow water, ignites things, hardens with water
@@ -101,7 +101,7 @@ export class Lava extends Material {
 export class Ice extends Material {
     id = 15;
     name = "Ice";
-    color = 0xAADDFF; // Light Blue
+    color = 0x88CCEE; // Cyan Ice
 
     update(grid: Grid, x: number, y: number): boolean {
         // Ice freezes nearby water and melts near fire
@@ -136,7 +136,7 @@ export class Ice extends Material {
 export class Plant extends Material {
     id = 16;
     name = "Plant";
-    color = 0x22AA22; // Green
+    color = 0x228844; // Forest Green
 
     update(grid: Grid, x: number, y: number): boolean {
         // Plant grows upward when water is nearby
@@ -195,7 +195,7 @@ export class Plant extends Material {
 export class Gas extends Material {
     id = 17;
     name = "Gas";
-    color = 0xFFFF88; // Pale Yellow
+    color = 0xFFEE66; // Rich Gas
 
     update(grid: Grid, x: number, y: number): boolean {
         // Gas rises and explodes when ignited

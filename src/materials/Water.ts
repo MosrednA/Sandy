@@ -4,7 +4,7 @@ import { Material } from './Material';
 export class Water extends Material {
     id = 3;
     name = "Water";
-    color = 0x4488FF;
+    color = 0x2266CC; // Deep Blue
 
     update(grid: Grid, x: number, y: number): boolean {
         // Gravity

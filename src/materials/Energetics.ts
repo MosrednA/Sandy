@@ -4,16 +4,16 @@ import { Material } from './Material';
 export class Fire extends Material {
     id = 10;
     name = "Fire";
-    color = 0xFF4400; // Orange-Red
+    color = 0xFF6622; // Warm Orange
 
     update(grid: Grid, x: number, y: number): boolean {
         // Fire rises and spreads to flammables, then dies out
 
         // 1. Decay (Fire is short-lived but creates nice flames)
-        if (Math.random() < 0.03) { // 3% chance per frame to die (was 8%)
+        if (Math.random() < 0.10) { // 10% chance per frame to die (was 3%) - Limits spark range
             // Turn into smoke - increased smoke production
             if (Math.random() < 0.7) { // 70% chance for smoke (was 30%)
-                grid.set(x, y, 12); // Smoke
+                grid.set(x, y, 19); // HotSmoke (was 12)
             } else {
                 grid.set(x, y, 0); // Empty
             }
@@ -100,7 +100,7 @@ export class Fire extends Material {
                         } else if (id !== 1) { // Don't destroy Stone easily
                             // Outer ring turns to smoke only (no spreading fire)
                             if (dist > radius * 0.7) {
-                                grid.set(nx, ny, 12); // Smoke
+                                grid.set(nx, ny, 19); // HotSmoke (was 12)
                             } else {
                                 grid.set(nx, ny, 0);
                             }
@@ -115,7 +115,7 @@ export class Fire extends Material {
 export class Gunpowder extends Material {
     id = 11;
     name = "Gunpowder";
-    color = 0x444444; // Dark Gray
+    color = 0x2A2A2A; // Dark Gunpowder
 
     update(grid: Grid, x: number, y: number): boolean {
         // Gunpowder behaves like Sand but explodes when touched by Fire
@@ -201,7 +201,7 @@ export class Gunpowder extends Material {
                             grid.set(nx, ny, 10); // Chain reaction
                         } else if (id !== 1) {
                             if (dist > radius * 0.7) {
-                                grid.set(nx, ny, 12); // Smoke
+                                grid.set(nx, ny, 19); // HotSmoke (was 12)
                             } else {
                                 grid.set(nx, ny, 0);
                             }

@@ -22,14 +22,19 @@ export class WebGLRenderer {
     private glowData32: Uint32Array;
     private glowTexture: Texture;
 
-    // Glow material IDs (Fire, Ember, Lava)
+    // Glow material IDs (Fire, Ember, Lava, Acid)
     private glowMaterials: Uint8Array = new Uint8Array(256);
 
-    // Pre-computed colors from registry
-    private colors!: Uint32Array;
+    // Pre-computed colors with variations
+    // Layout: [Mat0_Var0, Mat0_Var1, Mat0_Var2, Mat0_Var3, Mat1_Var0...]
+    private colorVariants!: Uint32Array;
+
+    // Per-pixel noise buffer (stores index 0-3)
+    private noiseBuffer: Uint8Array;
 
     // Constants
-    private readonly BG_COLOR = 0xFF111111; // ABGR
+    private readonly BG_COLOR = 0xFF050505; // Deep black (ABGR)
+
     private readonly BLACK_HOLE_COLOR = 0xFF440022;
     private readonly BLACK_HOLE_GLOW = 0xFFFF0088;
     private readonly BLACK_HOLE_ID = 18;
@@ -49,10 +54,18 @@ export class WebGLRenderer {
         this.glowData = new Uint8ClampedArray(this.glowBuffer);
         this.glowData32 = new Uint32Array(this.glowBuffer);
 
+        // Noise buffer for texture variation
+        this.noiseBuffer = new Uint8Array(WORLD_WIDTH * WORLD_HEIGHT);
+        // Fill noise buffer with random 0..3
+        for (let i = 0; i < this.noiseBuffer.length; i++) {
+            this.noiseBuffer[i] = Math.floor(Math.random() * 4);
+        }
+
         // Fill with background color using 32-bit writes
         this.pixelData32.fill(this.BG_COLOR);
 
         // Mark glow materials
+        this.glowMaterials[8] = 1;  // Acid
         this.glowMaterials[10] = 1; // Fire
         this.glowMaterials[13] = 1; // Ember
         this.glowMaterials[14] = 1; // Lava
@@ -83,8 +96,8 @@ export class WebGLRenderer {
             resizeTo: window,
         });
 
-        // Get pre-computed colors from registry
-        this.colors = materialRegistry.colors;
+        // Initialize color variants from registry
+        this.initColorVariants(materialRegistry.colors);
 
         // Create textures
         this.texture = Texture.from({
@@ -112,7 +125,7 @@ export class WebGLRenderer {
         this.glowSprite.blendMode = 'add';
         this.glowSprite.alpha = 0.6;
 
-        const blurFilter = new BlurFilter({ strength: 8, quality: 2 });
+        const blurFilter = new BlurFilter({ strength: 12, quality: 3 });
         this.glowContainer.filters = [blurFilter];
         this.glowContainer.addChild(this.glowSprite);
         this.app.stage.addChild(this.glowContainer);
@@ -134,7 +147,8 @@ export class WebGLRenderer {
         const cells = this.world.grid.cells;
         const buf = this.pixelData32;
         const glow = this.glowData32;
-        const colors = this.colors;
+        const variants = this.colorVariants;
+        const noise = this.noiseBuffer;
         const glowMats = this.glowMaterials;
         const bgColor = this.BG_COLOR;
         const bhColor = this.BLACK_HOLE_COLOR;
@@ -155,9 +169,13 @@ export class WebGLRenderer {
                 buf[i] = bhColor;
                 glow[i] = bhGlow;
             } else {
-                buf[i] = colors[id] || bgColor;
+                // Use pre-computed variant based on noise buffer
+                // id << 2 multiplies by 4 (to get to the block of variants)
+                // noise[i] is 0..3 (offset within block)
+                buf[i] = variants[(id << 2) + noise[i]] || bgColor;
+
                 if (glowMats[id]) {
-                    glow[i] = colors[id];
+                    glow[i] = variants[(id << 2)]; // Use base color for glow? Or variant? Base is cleaner.
                 }
             }
         }
@@ -165,5 +183,50 @@ export class WebGLRenderer {
         // Update textures
         this.texture.source.update();
         this.glowTexture.source.update();
+    }
+
+    private initColorVariants(baseColors: Uint32Array) {
+        // Create 4 variants for each of the 256 materials
+        this.colorVariants = new Uint32Array(256 * 4);
+
+        for (let id = 0; id < 256; id++) {
+            const color = baseColors[id];
+            if (color === 0) continue; // Skip empty/invalid
+
+            // Extract ABGR components (Little Endian)
+            // 0xAABBGGRR
+            const r = color & 0xFF;
+            const g = (color >> 8) & 0xFF;
+            const b = (color >> 16) & 0xFF;
+            const a = (color >> 24) & 0xFF;
+
+            // Generate 4 variants
+            for (let v = 0; v < 4; v++) {
+                // Variation factor: -10 to +10 roughly
+                // v=0: Base
+                // v=1: Darker
+                // v=2: Lighter
+                // v=3: Slightly different tone
+
+                let r2 = r, g2 = g, b2 = b;
+
+                if (v === 1) {
+                    r2 = Math.max(0, r - 15);
+                    g2 = Math.max(0, g - 15);
+                    b2 = Math.max(0, b - 15);
+                } else if (v === 2) {
+                    r2 = Math.min(255, r + 15);
+                    g2 = Math.min(255, g + 15);
+                    b2 = Math.min(255, b + 15);
+                } else if (v === 3) {
+                    // Shift tint slightly (e.g. more red/less blue)
+                    r2 = Math.min(255, r + 8);
+                    b2 = Math.max(0, b - 8);
+                }
+
+                // Recombine
+                this.colorVariants[(id * 4) + v] = (a << 24) | (b2 << 16) | (g2 << 8) | r2;
+            }
+        }
     }
 }

@@ -4,7 +4,7 @@ import { Material } from './Material';
 export class Acid extends Material {
     id = 8;
     name = "Acid";
-    color = 0x66FF33; // Bright Green
+    color = 0x33FF66; // Toxic Green
 
     update(grid: Grid, x: number, y: number): boolean {
         // 1. Check for corrosion first
@@ -119,7 +119,7 @@ export class Acid extends Material {
 export class Oil extends Material {
     id = 9;
     name = "Oil";
-    color = 0x331100; // Brownish Black
+    color = 0x1A0A00; // Dark Viscous Oil
 
     update(grid: Grid, x: number, y: number): boolean {
         // Movement (Liquid logic)

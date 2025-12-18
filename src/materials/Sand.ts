@@ -4,7 +4,7 @@ import { Material } from './Material';
 export class Sand extends Material {
     id = 2;
     name = "Sand";
-    color = 0xFEDC97; // Yellowish
+    color = 0xD4A574; // Warm Earthy Sand
 
     update(grid: Grid, x: number, y: number): boolean {
         // Simple Gravity

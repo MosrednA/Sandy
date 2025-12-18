@@ -13,7 +13,20 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #000;
+  background: #050505;
+}
+
+/* Vignette Overlay */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.6) 100%);
+  z-index: 10;
 }
 
 #app {
@@ -33,8 +46,9 @@ canvas {
   height: 100%;
   image-rendering: pixelated;
   cursor: crosshair;
-  box-shadow: inset 0 0 100px rgba(100, 150, 255, 0.08),
-    inset 0 0 50px rgba(255, 100, 50, 0.05);
+  cursor: crosshair;
+  /* Removed inner glow, handled by renderer/vignette */
+
 }
 
 /* Compact Modern UI */

@@ -18,14 +18,14 @@ A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded ph
 ## ✨ Features
 
 ### 🧱 Materials
-| Category    | Materials                         |
-| ----------- | --------------------------------- |
-| **Solids**  | Sand, Stone, Wood, Ice            |
-| **Liquids** | Water, Oil, Acid, Lava            |
-| **Gases**   | Steam, Smoke, Flammable Gas       |
-| **Fire**    | Fire, Ember, Gunpowder            |
-| **Nature**  | Plant (grows with water!)         |
-| **Special** | ⚫ Black Hole (attracts particles) |
+| Category    | Materials                              |
+| ----------- | -------------------------------------- |
+| **Solids**  | Sand, Stone, Wood, Ice                 |
+| **Liquids** | Water, Oil, Acid, Lava                 |
+| **Gases**   | Steam, Hot Smoke, Smoke, Flammable Gas |
+| **Fire**    | Fire, Ember, Gunpowder                 |
+| **Nature**  | Plant (grows with water!)              |
+| **Special** | ⚫ Black Hole (attracts particles)      |
 
 ### ⚡ Interactions
 - 🔥 Fire spreads to wood, ignites oil & gas explosively
@@ -45,6 +45,15 @@ A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded ph
 | **Web Workers**         | Physics runs off main thread    |
 | **Shared Memory**       | Atomic particle counting        |
 | **Glow Effects**        | Additive blending for fire/lava |
+
+### 🎨 Visual Enhancements (Noita-Inspired)
+| Feature                   | Description                           |
+| ------------------------- | ------------------------------------- |
+| **Per-Pixel Color Noise** | Organic texture variation             |
+| **Enhanced Glow**         | Bloom effects for emissive materials  |
+| **Hot Smoke Transition**  | Fire → Hot Smoke → Smoke gradient     |
+| **Atmospheric Depth**     | Vignette and dark background          |
+| **Rich Color Palettes**   | Saturated, hand-tuned material colors |
 
 ---
 

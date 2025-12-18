@@ -4,7 +4,7 @@ import { Material } from './Material';
 export class Wood extends Material {
     id = 5;
     name = "Wood";
-    color = 0x8B4513; // SaddleBrown
+    color = 0x654321; // Dark Mahogany
 
     update(grid: Grid, x: number, y: number): boolean {
         // Wood is a static solid that starts smoldering when touched by fire/ember
@@ -44,7 +44,7 @@ export class Wood extends Material {
 export class Ember extends Material {
     id = 13;
     name = "Ember";
-    color = 0xFF6600; // Orange (smoldering)
+    color = 0xFF5500; // Burning Ember
 
     update(grid: Grid, x: number, y: number): boolean {
         // Ember is smoldering wood that slowly heats up and can emit fire
@@ -62,7 +62,7 @@ export class Ember extends Material {
         // We can't change color dynamically easily, but the behavior changes
 
         // 1. If hot enough, chance to emit fire into empty neighbor space
-        if (heat > 0.8) {
+        if (heat > 0.6) { // Lowered threshold (was 0.8)
             const neighbors = [
                 { dx: 0, dy: -1 },  // up (fire rises)
                 { dx: -1, dy: 0 },
@@ -71,12 +71,12 @@ export class Ember extends Material {
 
             for (const n of neighbors) {
                 const id = grid.get(x + n.dx, y + n.dy);
-                if (id === 0 && Math.random() < 0.08) { // Increased from 0.03
+                if (id === 0 && Math.random() < 0.20) { // Increased from 0.08 to 0.20 (20% chance)
                     // Emit fire or smoke
-                    if (Math.random() < 0.7) {
+                    if (Math.random() < 0.8) { // 80% Fire (was 30%)
                         grid.set(x + n.dx, y + n.dy, 10); // Emit fire
                     } else {
-                        grid.set(x + n.dx, y + n.dy, 12); // Emit smoke
+                        grid.set(x + n.dx, y + n.dy, 19); // Emit HotSmoke (was 12)
                     }
                     heat -= 0.05;
                     break;
@@ -104,10 +104,23 @@ export class Ember extends Material {
         }
 
         // 3. Eventually burn out
-        if (heat > 1.0 && Math.random() < 0.015) {
+        // 3. Eventually burn out
+        // GUARANTEED BURNOUT: If heat is high enough, we MUST burn out eventually.
+        // Also added a small chance to burn out regardless of heat to prevent "stuck" pixels.
+
+        let burnoutChance = 0;
+        if (heat > 1.2) {
+            burnoutChance = 0.05; // 5% chance per frame if very hot
+        } else if (heat > 0.8) {
+            burnoutChance = 0.01; // 1% chance if hot
+        } else {
+            burnoutChance = 0.001; // 0.1% chance failsafe (approx 16 seconds max lifespan)
+        }
+
+        if (Math.random() < burnoutChance) {
             // Burn out to smoke mostly
             if (Math.random() < 0.8) { // 80% chance for smoke
-                grid.set(x, y, 12); // Smoke
+                grid.set(x, y, 19); // HotSmoke (was 12)
             } else {
                 grid.set(x, y, 0); // Empty
             }

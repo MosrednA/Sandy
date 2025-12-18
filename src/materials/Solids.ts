@@ -14,7 +14,7 @@ export class Empty extends Material {
 export class Stone extends Material {
     id = 1;
     name = "Stone";
-    color = 0x888888;
+    color = 0x5C5C6E; // Cool Rocky Gray
 
     update(_grid: Grid, _x: number, _y: number): boolean {
         return false;

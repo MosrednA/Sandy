@@ -4,7 +4,7 @@ import { Material } from './Material';
 export class Steam extends Material {
     id = 7;
     name = "Steam";
-    color = 0xDDEEFF; // White-ish Blue
+    color = 0xE0F0FF; // Translucent Steam
 
     update(grid: Grid, x: number, y: number): boolean {
         // Rises! Anti-gravity.
@@ -59,7 +59,7 @@ export class Steam extends Material {
 export class Smoke extends Material {
     id = 12;
     name = "Smoke";
-    color = 0x333333; // Dark Gray
+    color = 0x222222; // Dark Smoke
 
     update(grid: Grid, x: number, y: number): boolean {
         // Smoke rises slowly and dissipates
@@ -97,6 +97,57 @@ export class Smoke extends Material {
             return true;
         }
 
+        return false;
+    }
+}
+
+export class HotSmoke extends Material {
+    id = 19;
+    name = "HotSmoke";
+    color = 0x553311; // Dark Orange/Brown (transition color)
+
+    update(grid: Grid, x: number, y: number): boolean {
+        // Hot Smoke rises like smoke but quickly cools down to regular smoke
+
+        // 1. Cool down (transition to Smoke)
+        if (Math.random() < 0.03) { // 3% chance per frame to cool down (was 15%)
+            grid.set(x, y, 12); // Turn into Smoke (ID 12)
+            return true;
+        }
+
+        // 2. Decay (disappear completely)
+        if (Math.random() < 0.01) {
+            grid.set(x, y, 0);
+            return true;
+        }
+
+        // 3. Movement (Rise) - Always try to move!
+        // No sleep chance here anymore.
+
+        // Chaos / Drift
+        const dirX = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+        const targetX = x + dirX;
+        const targetY = y - 1;
+
+        if (targetY >= 0 && targetX >= 0 && targetX < grid.width) {
+            const content = grid.get(targetX, targetY);
+            if (content === 0) {
+                grid.move(x, y, targetX, targetY);
+                return true;
+            }
+        }
+
+        // 4. Drift sideways if blocked above
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const sideContent = grid.get(x + side, y);
+        if (sideContent === 0) {
+            grid.move(x, y, x + side, y);
+            return true;
+        }
+
+        // 5. If blocked completely, try to stay awake?
+        // Returning false allows it to sleep. If we want it "volatile", we return true?
+        // But if it's trapped, it should sleep.
         return false;
     }
 }

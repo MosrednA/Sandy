@@ -9,7 +9,7 @@ import { Water } from './materials/Water';
 
 
 import { Acid, Oil } from './materials/Liquids';
-import { Steam, Smoke } from './materials/Gases';
+import { Steam, Smoke, HotSmoke } from './materials/Gases';
 import { Fire, Gunpowder } from './materials/Energetics';
 import { Wood, Ember } from './materials/Wood';
 import { Lava, Ice, Plant, Gas } from './materials/Elements';
@@ -27,6 +27,7 @@ materialRegistry.register(new Fire());  // ID 10
 materialRegistry.register(new Gunpowder()); // ID 11
 materialRegistry.register(new Wood()); // ID 5
 materialRegistry.register(new Smoke()); // ID 12
+materialRegistry.register(new HotSmoke()); // ID 19
 materialRegistry.register(new Ember()); // ID 13
 materialRegistry.register(new Lava()); // ID 14
 materialRegistry.register(new Ice()); // ID 15
