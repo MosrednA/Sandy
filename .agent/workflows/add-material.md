@@ -44,6 +44,8 @@ In `src/main.ts`, add a button in the appropriate category div:
 
 **CRITICAL: Always update `README.md` to reflect the current state of the project after adding or removing any material, feature, or tool.**
 
+Also, ensure that any relevant workflows in `.agent/workflows/` are updated (e.g., this file's material list). See [maintain-workflows.md](file:///c:/Projects/Sand2/.agent/workflows/maintain-workflows.md) for details.
+
 ## Material IDs Currently Used
 
 | ID  | Material   |
