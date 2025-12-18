@@ -9,9 +9,12 @@ registerAllMaterials();
 let world: World;
 let assignedChunks: { cx: number, cy: number }[] = [];
 let workerId = -1;
+// Reserved for future chunk sleeping optimization
+// @ts-expect-error Reserved for future use
 let _currentActiveChunks: Uint8Array | null = null;
 let jitterX = 0;
 let jitterY = 0;
+// @ts-expect-error Reserved for future use
 let _cols = 0;
 
 self.onmessage = (e) => {
@@ -46,6 +49,20 @@ self.onmessage = (e) => {
     }
 };
 
+// Pre-allocated array for shuffled cell indices (reused each chunk)
+const cellIndices: number[] = new Array(CHUNK_SIZE * CHUNK_SIZE);
+for (let i = 0; i < cellIndices.length; i++) cellIndices[i] = i;
+
+// Fisher-Yates shuffle (in-place, fast)
+function shuffleArray(arr: number[], count: number): void {
+    for (let i = count - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+}
+
 function runPhase(phase: Phase) {
     const grid = world.grid;
     const width = grid.width;
@@ -77,16 +94,6 @@ function runPhase(phase: Phase) {
 
         if (!match) continue;
 
-        // CHUNK SLEEPING: Disabled for now - jitter breaks chunk index mapping
-        // The jittered pixel bounds don't align with the chunk state array indices
-        // TODO: Fix by using non-jittered chunk indices for sleep check
-        // if (currentActiveChunks && cols > 0) {
-        //     const chunkIdx = cy * cols + cx;
-        //     if (chunkIdx >= 0 && chunkIdx < currentActiveChunks.length) {
-        //         if (currentActiveChunks[chunkIdx] === 0) continue;
-        //     }
-        // }
-
         // Process Chunk with JITTER offset
         let startChunkX = cx * CHUNK_SIZE + jitterX;
         let endChunkX = (cx + 1) * CHUNK_SIZE + jitterX;
@@ -101,24 +108,27 @@ function runPhase(phase: Phase) {
 
         if (startChunkX >= endChunkX || startY >= endY) continue;
 
-        // Iterate pixels inside the chunk - Bottom-Up
-        for (let y = endY - 1; y >= startY; y--) {
-            const rowOffset = y * width;
-            const leftToRight = (y + world.frameCount) % 2 === 0;
+        const chunkWidth = endChunkX - startChunkX;
+        const chunkHeight = endY - startY;
+        const cellCount = chunkWidth * chunkHeight;
 
-            let x = leftToRight ? startChunkX : endChunkX - 1;
-            const finalX = leftToRight ? endChunkX : startChunkX - 1;
-            const step = leftToRight ? 1 : -1;
+        // Shuffle cell indices for this chunk
+        shuffleArray(cellIndices, cellCount);
 
-            while (x !== finalX) {
-                const id = grid.cells[rowOffset + x];
-                if (id !== 0) {
-                    const m = materialRegistry.get(id);
-                    if (m) {
-                        m.update(grid, x, y);
-                    }
+        // Process cells in shuffled order
+        for (let i = 0; i < cellCount; i++) {
+            const idx = cellIndices[i];
+            const localX = idx % chunkWidth;
+            const localY = Math.floor(idx / chunkWidth);
+            const x = startChunkX + localX;
+            const y = startY + localY;
+
+            const id = grid.cells[y * width + x];
+            if (id !== 0) {
+                const m = materialRegistry.get(id);
+                if (m) {
+                    m.update(grid, x, y);
                 }
-                x += step;
             }
         }
     }

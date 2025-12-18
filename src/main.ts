@@ -2,6 +2,7 @@ import './style.css';
 import { World } from './core/World';
 import { WebGLRenderer } from './rendering/WebGLRenderer';
 import { InputHandler } from './input/InputHandler';
+import { SaveLoadUI } from './ui/SaveLoadUI';
 import { registerAllMaterials } from './materials/registerAll';
 
 // 1. Register Materials (centralized to prevent worker sync issues)
@@ -75,6 +76,7 @@ app.innerHTML = `
             </div>
             <div class="action-group">
                 <button id="clear-btn" class="action-btn">Clear</button>
+                <button id="open-sl-btn" class="action-btn" style="background: rgba(68, 136, 255, 0.2); color: #88bbff;">Save/Load</button>
                 <label class="toggle-label">
                     <input type="checkbox" id="override-toggle" checked>
                     <span>Override</span>
@@ -211,6 +213,12 @@ brushSlider.addEventListener('input', (e: Event) => {
 const clearBtn = document.getElementById('clear-btn')!;
 clearBtn.addEventListener('click', () => {
   input.clearCanvas();
+});
+
+const saveLoadUI = new SaveLoadUI(world);
+const openSlBtn = document.getElementById('open-sl-btn')!;
+openSlBtn.addEventListener('click', () => {
+  saveLoadUI.show();
 });
 
 // Override toggle

@@ -281,3 +281,250 @@ input[type=range]::-webkit-slider-thumb {
 #particle-counter {
   color: #4488FF;
 }
+
+/* Save Load UI */
+#save-load-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+  display: flex;
+  /* managed by JS */
+  align-items: center;
+  justify-content: center;
+}
+
+.save-load-modal {
+  background: rgba(20, 20, 25, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.save-load-modal h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.sl-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sl-section h3 {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.input-group input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  outline: none;
+}
+
+.input-group button,
+.world-item button,
+#close-sl-btn,
+#open-sl-btn {
+  background: #4488FF;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.input-group button:hover,
+.world-item button:hover,
+#close-sl-btn:hover,
+#open-sl-btn:hover {
+  filter: brightness(1.2);
+}
+
+#world-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.world-item {
+  padding: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.world-item:last-child {
+  border-bottom: none;
+}
+
+.world-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.world-item button {
+  font-size: 10px;
+  padding: 4px 8px;
+  background: #333;
+}
+
+.sl-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+/* Confirmation Dialog */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.confirm-box {
+  background: linear-gradient(145deg, rgba(35, 35, 45, 0.98), rgba(25, 25, 30, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 340px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(255, 80, 80, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  animation: scaleIn 0.2s ease-out;
+}
+
+.confirm-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 0 10px rgba(255, 150, 50, 0.4));
+}
+
+.confirm-box h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.confirm-box p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.confirm-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.confirm-btn.cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.confirm-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.confirm-btn.danger {
+  background: linear-gradient(135deg, #ff4444, #cc2222);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 50, 50, 0.3);
+}
+
+.confirm-btn.danger:hover {
+  background: linear-gradient(135deg, #ff5555, #dd3333);
+  box-shadow: 0 6px 20px rgba(255, 50, 50, 0.4);
+  transform: translateY(-1px);
+}
+
+.delete-btn {
+  background: rgba(255, 80, 80, 0.2) !important;
+  color: #ff8888 !important;
+}
+
+.delete-btn:hover {
+  background: rgba(255, 80, 80, 0.4) !important;
+}

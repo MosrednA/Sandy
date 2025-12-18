@@ -4,6 +4,7 @@ export abstract class Material {
     abstract id: number;
     abstract name: string;
     abstract color: number; // 0xFFEEDD generic hex
+    density?: number;
 
     /**
      * Update a single cell.
