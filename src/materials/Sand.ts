@@ -1,5 +1,15 @@
 import { Grid } from '../core/Grid';
 import { Material } from './Material';
+import { GRAVITY } from '../core/Constants';
+import { MaterialId } from './MaterialIds';
+
+// Helper to check if a material is a gas (can be displaced by falling solids)
+function isGas(id: number): boolean {
+    return id === MaterialId.STEAM ||
+        id === MaterialId.SMOKE ||
+        id === MaterialId.HOT_SMOKE ||
+        id === MaterialId.CRYO;
+}
 
 export class Sand extends Material {
     id = 2;
@@ -9,20 +19,10 @@ export class Sand extends Material {
     update(grid: Grid, x: number, y: number): boolean {
         // Simple Gravity
         let velocity = grid.getVelocity(x, y);
-        velocity += 0.5; // Gravity acceleration
+        velocity += GRAVITY; // Gravity acceleration
         if (velocity > 8) velocity = 8; // Terminal velocity
 
-        // Determine how many pixels to move this frame
-        // We only move the integer part, but keep the fractional part for next frame?
-        // Actually, just storing the velocity is enough for the "speed" check.
-        // We attempt to move floor(velocity) times.
         const steps = Math.floor(velocity);
-
-        // If velocity < 1, we might effectively pause? 
-        // Or should we just treat 0.5 as "move every 2 frames"?
-        // For simplicity, let's always ensure at least 1 step if falling, 
-        // to prevent sticky behavior, or just rely on steps.
-        // If steps = 0, we don't move, but velocity increases next frame.
 
         let moved = false;
         let currentX = x;
@@ -31,21 +31,28 @@ export class Sand extends Material {
         for (let i = 0; i < steps; i++) {
             const nextY = currentY + 1;
             const below = grid.get(currentX, nextY);
-            const WATER = 3;
 
-            if (below === 0) {
+            // Fall through empty space
+            if (below === MaterialId.EMPTY) {
                 grid.move(currentX, currentY, currentX, nextY);
                 moved = true;
                 currentY = nextY;
-            } else if (below === WATER) {
-                // WOBBLE: Chance to move diagonally even if down is open (to simulate turbulence/wobble)
-                const wobble = Math.random() < 0.4; // 40% chance to deviate
+            }
+            // Swap with gases (fall through them)
+            else if (isGas(below)) {
+                grid.swap(currentX, currentY, currentX, nextY);
+                moved = true;
+                currentY = nextY;
+            }
+            // Swap with water (sink)
+            else if (below === MaterialId.WATER) {
+                const wobble = Math.random() < 0.4;
                 let didWobble = false;
 
                 if (wobble) {
                     const dir = Math.random() < 0.5 ? 1 : -1;
                     const diagonal = grid.get(currentX + dir, nextY);
-                    if (diagonal === WATER) {
+                    if (diagonal === MaterialId.WATER || isGas(diagonal)) {
                         grid.swap(currentX, currentY, currentX + dir, nextY);
                         moved = true;
                         currentX += dir;
@@ -55,44 +62,41 @@ export class Sand extends Material {
                 }
 
                 if (!didWobble) {
-                    // Standard sinking
                     grid.swap(currentX, currentY, currentX, nextY);
                     moved = true;
                     currentY = nextY;
                 }
 
-                // Water slows us down
-                velocity *= 0.9; // Less friction than before (was 0.5) to keep it moving
+                velocity *= 0.9;
             } else {
-                // Diagonal
+                // Diagonal fall
                 const dir = Math.random() < 0.5 ? 1 : -1;
                 const diagonal1 = grid.get(currentX + dir, nextY);
                 const diagonal2 = grid.get(currentX - dir, nextY);
 
-                if (diagonal1 === 0) {
+                if (diagonal1 === MaterialId.EMPTY) {
                     grid.move(currentX, currentY, currentX + dir, nextY);
                     moved = true;
                     currentX += dir;
                     currentY = nextY;
-                } else if (diagonal1 === WATER) {
+                } else if (isGas(diagonal1) || diagonal1 === MaterialId.WATER) {
                     grid.swap(currentX, currentY, currentX + dir, nextY);
                     moved = true;
                     currentX += dir;
                     currentY = nextY;
-                    velocity *= 0.5;
-                } else if (diagonal2 === 0) {
+                    if (diagonal1 === MaterialId.WATER) velocity *= 0.5;
+                } else if (diagonal2 === MaterialId.EMPTY) {
                     grid.move(currentX, currentY, currentX - dir, nextY);
                     moved = true;
                     currentX -= dir;
                     currentY = nextY;
-                } else if (diagonal2 === WATER) {
+                } else if (isGas(diagonal2) || diagonal2 === MaterialId.WATER) {
                     grid.swap(currentX, currentY, currentX - dir, nextY);
                     moved = true;
                     currentX -= dir;
                     currentY = nextY;
-                    velocity *= 0.5;
+                    if (diagonal2 === MaterialId.WATER) velocity *= 0.5;
                 } else {
-                    // Hit ground
                     velocity = 0;
                     grid.setVelocity(currentX, currentY, 0);
                     return moved;

@@ -1,8 +1,9 @@
 import { Grid } from '../core/Grid';
 import { Liquid } from './Liquid';
+import { MaterialId } from './MaterialIds';
 
 export class Acid extends Liquid {
-    id = 8;
+    id = MaterialId.ACID;
     name = "Acid";
     color = 0xCCFF33; // Acidic Yellow-Green
     density = 15; // Heavier than water (10)
@@ -24,12 +25,27 @@ export class Acid extends Liquid {
             const ny = y + n.dy;
             const id = grid.get(nx, ny);
 
-            // Corrode Stone (1), Sand (2), Wood (5 - if exists)
-            // Does not corrode Boundary (255) OR Empty (0) OR Self (8)
-            if (id === 1 || id === 2 || id === 5) {
+            // Corrode Stone, Sand, Wood
+            if (id === MaterialId.STONE || id === MaterialId.SAND || id === MaterialId.WOOD) {
                 if (Math.random() < 0.1) {
-                    grid.set(nx, ny, 0); // Destroy neighbor
-                    grid.set(x, y, 0);   // Destroy self
+                    grid.set(nx, ny, MaterialId.EMPTY);
+                    grid.set(x, y, MaterialId.EMPTY);
+                    return true;
+                }
+            }
+            // Acid melts Ice very fast
+            else if (id === MaterialId.ICE) {
+                if (Math.random() < 0.3) { // 30% - faster than fire
+                    grid.set(nx, ny, MaterialId.WATER);
+                    // Acid neutralized slightly
+                    if (Math.random() < 0.2) grid.set(x, y, MaterialId.EMPTY);
+                }
+            }
+            // Acid + Lava = toxic smoke reaction
+            else if (id === MaterialId.LAVA) {
+                if (Math.random() < 0.2) {
+                    grid.set(nx, ny, MaterialId.HOT_SMOKE); // Toxic fumes
+                    grid.set(x, y, MaterialId.SMOKE);
                     return true;
                 }
             }
@@ -41,7 +57,7 @@ export class Acid extends Liquid {
 }
 
 export class Oil extends Liquid {
-    id = 9;
+    id = MaterialId.OIL;
     name = "Oil";
     color = 0x1A0A00; // Dark Viscous Oil
     density = 5; // Lighter than Water (10)
@@ -52,7 +68,7 @@ export class Oil extends Liquid {
 }
 
 export class Slime extends Liquid {
-    id = 20;
+    id = MaterialId.POISON;
     name = "Slime";
     color = 0x00EE22; // Neon Radioactive Green
     density = 12; // Heavier than Water(10), lighter than Acid(15)
@@ -61,9 +77,9 @@ export class Slime extends Liquid {
 
     update(grid: Grid, x: number, y: number): boolean {
         // Radioactive properties:
-        // 1. Turn Water (3) into Acid (8)
-        // 2. Ignite Wood (5) -> Fire (10)
-        // 3. Mutate Stone (1) -> Sand (2) (slow erosion)
+        // 1. Turn Water into Acid
+        // 2. Ignite Wood -> Fire
+        // 3. Mutate Stone -> Sand (slow erosion)
 
         // Unrolled loop to avoid object allocation {dx, dy}
         const nx1 = x + 0; const ny1 = y - 1;
@@ -74,13 +90,13 @@ export class Slime extends Liquid {
         // Helper inline check
         const check = (nx: number, ny: number) => {
             const id = grid.get(nx, ny);
-            if (id === 3) { // Water
-                if (Math.random() < 0.05) grid.set(nx, ny, 8);
-            } else if (id === 5) { // Wood
-                if (Math.random() < 0.02) grid.set(nx, ny, 10);
-            } else if (id === 1) { // Stone
+            if (id === MaterialId.WATER) {
+                if (Math.random() < 0.05) grid.set(nx, ny, MaterialId.ACID);
+            } else if (id === MaterialId.WOOD) {
+                if (Math.random() < 0.02) grid.set(nx, ny, MaterialId.FIRE);
+            } else if (id === MaterialId.STONE) {
                 if (Math.random() < 0.005) {
-                    grid.set(nx, ny, 2); // Erode to Sand
+                    grid.set(nx, ny, MaterialId.SAND); // Erode to Sand
                     // Also maybe Slime gets consumed?
                 }
             }
@@ -97,3 +113,4 @@ export class Slime extends Liquid {
         return super.update(grid, x, y);
     }
 }
+

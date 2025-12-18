@@ -1,8 +1,9 @@
 import { Grid } from '../core/Grid';
 import { Material } from './Material';
+import { MaterialId } from './MaterialIds';
 
 export class Steam extends Material {
-    id = 7;
+    id = MaterialId.STEAM;
     name = "Steam";
     color = 0xE0F0FF; // Translucent Steam
 
@@ -13,12 +14,12 @@ export class Steam extends Material {
 
         // Decay
         if (Math.random() < 0.005) { // 0.5% chance per frame to disappear
-            grid.set(x, y, 0);
+            grid.set(x, y, MaterialId.EMPTY);
             return true;
         }
 
-        // Slow down rising - only move 30% of frames
-        if (Math.random() > 0.3) {
+        // Slow down rising - only move 40% of frames (was 30%)
+        if (Math.random() > 0.4) {
             return false;
         }
 
@@ -33,19 +34,19 @@ export class Steam extends Material {
 
         if (destInBounds) {
             const content = grid.get(targetX, targetY);
-            if (content === 0) {
+            if (content === MaterialId.EMPTY) {
                 grid.move(x, y, targetX, targetY);
                 return true;
-            } else if (content === 3 || content === 15) { // Water or Ice
-                // Condense back to water
-                if (Math.random() < 0.2) { // 20% chance
-                    grid.set(x, y, 3);
+            } else if (content === MaterialId.WATER || content === MaterialId.ICE || content === MaterialId.CRYO) {
+                // Condense back to water on cold surfaces
+                if (Math.random() < 0.2) {
+                    grid.set(x, y, MaterialId.WATER);
                     return true;
                 }
-            } else if (content !== 0 && content !== 255) {
+            } else if (content !== MaterialId.EMPTY && content !== MaterialId.WALL) {
                 // If blocked, try just side?
                 const sideContent = grid.get(targetX, y);
-                if (sideContent === 0) {
+                if (sideContent === MaterialId.EMPTY) {
                     grid.move(x, y, targetX, y);
                     return true;
                 }
@@ -57,7 +58,7 @@ export class Steam extends Material {
 }
 
 export class Smoke extends Material {
-    id = 12;
+    id = MaterialId.SMOKE;
     name = "Smoke";
     color = 0x222222; // Dark Smoke
 
@@ -66,7 +67,7 @@ export class Smoke extends Material {
 
         // Decay - Smoke dissipates faster than steam
         if (Math.random() < 0.02) { // 2% chance per frame to disappear
-            grid.set(x, y, 0);
+            grid.set(x, y, MaterialId.EMPTY);
             return true;
         }
 
@@ -83,7 +84,7 @@ export class Smoke extends Material {
 
         if (targetY >= 0 && targetX >= 0 && targetX < grid.width) {
             const content = grid.get(targetX, targetY);
-            if (content === 0) {
+            if (content === MaterialId.EMPTY) {
                 grid.move(x, y, targetX, targetY);
                 return true;
             }
@@ -92,7 +93,7 @@ export class Smoke extends Material {
         // Try just sideways if blocked above
         const side = Math.random() < 0.5 ? -1 : 1;
         const sideContent = grid.get(x + side, y);
-        if (sideContent === 0) {
+        if (sideContent === MaterialId.EMPTY) {
             grid.move(x, y, x + side, y);
             return true;
         }
@@ -102,22 +103,39 @@ export class Smoke extends Material {
 }
 
 export class HotSmoke extends Material {
-    id = 19;
+    id = MaterialId.HOT_SMOKE;
     name = "HotSmoke";
     color = 0x553311; // Dark Orange/Brown (transition color)
 
     update(grid: Grid, x: number, y: number): boolean {
         // Hot Smoke rises like smoke but quickly cools down to regular smoke
 
+        // Check for water contact - creates steam
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        ];
+        for (const n of neighbors) {
+            const id = grid.get(x + n.dx, y + n.dy);
+            if (id === MaterialId.WATER) {
+                // Hot smoke heats water into steam
+                if (Math.random() < 0.1) {
+                    grid.set(x + n.dx, y + n.dy, MaterialId.STEAM);
+                    grid.set(x, y, MaterialId.SMOKE); // Cools down
+                    return true;
+                }
+            }
+        }
+
         // 1. Cool down (transition to Smoke)
-        if (Math.random() < 0.03) { // 3% chance per frame to cool down (was 15%)
-            grid.set(x, y, 12); // Turn into Smoke (ID 12)
+        if (Math.random() < 0.03) {
+            grid.set(x, y, MaterialId.SMOKE);
             return true;
         }
 
         // 2. Decay (disappear completely)
         if (Math.random() < 0.01) {
-            grid.set(x, y, 0);
+            grid.set(x, y, MaterialId.EMPTY);
             return true;
         }
 
@@ -131,7 +149,7 @@ export class HotSmoke extends Material {
 
         if (targetY >= 0 && targetX >= 0 && targetX < grid.width) {
             const content = grid.get(targetX, targetY);
-            if (content === 0) {
+            if (content === MaterialId.EMPTY) {
                 grid.move(x, y, targetX, targetY);
                 return true;
             }
@@ -140,7 +158,7 @@ export class HotSmoke extends Material {
         // 4. Drift sideways if blocked above
         const side = Math.random() < 0.5 ? -1 : 1;
         const sideContent = grid.get(x + side, y);
-        if (sideContent === 0) {
+        if (sideContent === MaterialId.EMPTY) {
             grid.move(x, y, x + side, y);
             return true;
         }
@@ -151,3 +169,4 @@ export class HotSmoke extends Material {
         return false;
     }
 }
+

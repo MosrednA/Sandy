@@ -1,5 +1,5 @@
 export const CHUNK_SIZE = 64; // Logic chunk size (increased for worker overhead reduction)
-export const GRAVITY = 0.2;
+export const GRAVITY = 0.35; // Was 0.5 - reduced for lighter feel
 
 // Dimensions
 // Dimensions
@@ -20,4 +20,15 @@ export type Phase = typeof Phase[keyof typeof Phase];
 // 64 * 7 = 448
 // 64 * 5 = 320
 // Let's force WORLD_WIDTH/HEIGHT to be aligned or grid will just ceil it.
+// ... (existing comments)
 // Grid uses ceil, so it's fine.
+
+export interface OffGridParticle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    id: number;
+    color: number;
+}
+

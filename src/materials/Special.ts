@@ -1,8 +1,9 @@
 import { Grid } from '../core/Grid';
 import { Material } from './Material';
+import { MaterialId } from './MaterialIds';
 
 export class BlackHole extends Material {
-    id = 18;
+    id = MaterialId.BLACK_HOLE;
     name = "BlackHole";
     color = 0x220044; // Deep purple
 
@@ -29,13 +30,13 @@ export class BlackHole extends Material {
             const id = grid.get(px, py);
 
             // Skip empty, boundary, stone, and other black holes
-            if (id === 0 || id === 255 || id === 1 || id === 18) continue;
+            if (id === MaterialId.EMPTY || id === MaterialId.WALL || id === MaterialId.STONE || id === MaterialId.BLACK_HOLE) continue;
 
             const actualDist = Math.sqrt(dx * dx + dy * dy);
 
             // Consume if close
             if (actualDist <= this.CONSUME_RADIUS) {
-                grid.set(px, py, 0);
+                grid.set(px, py, MaterialId.EMPTY);
                 continue;
             }
 
@@ -46,7 +47,7 @@ export class BlackHole extends Material {
             const targetX = px + moveX;
             const targetY = py + moveY;
 
-            if (grid.get(targetX, targetY) === 0) {
+            if (grid.get(targetX, targetY) === MaterialId.EMPTY) {
                 grid.move(px, py, targetX, targetY);
             }
         }
@@ -56,7 +57,7 @@ export class BlackHole extends Material {
 }
 
 export class Void extends Material {
-    id = 19;
+    id = MaterialId.HOT_SMOKE; // Note: Shares ID with HotSmoke, effectively unused
     name = "Void";
     color = 0x000000; // Pure black
 
@@ -75,11 +76,12 @@ export class Void extends Material {
 
         for (const n of neighbors) {
             const id = grid.get(x + n.dx, y + n.dy);
-            if (id !== 0 && id !== 255 && id !== 19 && id !== 18) {
-                grid.set(x + n.dx, y + n.dy, 0);
+            if (id !== MaterialId.EMPTY && id !== MaterialId.WALL && id !== MaterialId.HOT_SMOKE && id !== MaterialId.BLACK_HOLE) {
+                grid.set(x + n.dx, y + n.dy, MaterialId.EMPTY);
             }
         }
 
         return false;
     }
 }
+

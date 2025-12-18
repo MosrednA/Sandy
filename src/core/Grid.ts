@@ -1,10 +1,14 @@
 import { CHUNK_SIZE } from './Constants';
-import { PARTICLE_COUNT_INDEX } from './SharedMemory';
+import { PARTICLE_COUNT_INDEX } from './SharedMemory'; // KEEP THIS IMPORT
+import type { OffGridParticle } from './Constants'; // Add this
 
 export class Grid {
     width: number;
     height: number;
     cells: Uint8Array;
+
+    // Queue for off-grid particles generated during this frame
+    public queuedParticles: OffGridParticle[] = [];
 
     // Optimization: Active Chunks
     cols: number;
@@ -211,5 +215,12 @@ export class Grid {
         if (this.syncView && delta !== 0) {
             Atomics.add(this.syncView, PARTICLE_COUNT_INDEX, delta);
         }
+    }
+
+    /**
+     * Queues a particle to be moved to the off-grid physics system.
+     */
+    addOffGridParticle(x: number, y: number, vx: number, vy: number, id: number, color: number): void {
+        this.queuedParticles.push({ x, y, vx, vy, id, color });
     }
 }

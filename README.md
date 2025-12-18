@@ -9,8 +9,6 @@
 
 A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded physics, and beautiful glow effects.
 
-> 🚀 **880,000+ particles at 100+ FPS** on modern hardware!
-
 ![Falling Sand Demo](https://raw.githubusercontent.com/MosrednA/Sandy/main/public/demo.gif)
 
 ---
@@ -18,20 +16,25 @@ A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded ph
 ## ✨ Features
 
 ### 🧱 Materials
-- **Solids**: Sand, Stone, Wood, Ice.
-- **Liquids**: Water, Oil, Acid, Lava.
-- **Gases**: Steam (rises), Smoke, Hot Smoke, Gas (explosive!).
-- **Energetics**: Fire (spreads), Gunpowder (solid explosive).
+- **Solids**: Sand, Stone, Wood, Ice, Magma Rock.
+- **Liquids**: Water, Oil, Acid, Lava, Slime.
+- **Gases**: Steam, Smoke, Gas (explosive!), Cryo (freezing).
+- **Energetics**: Fire, Gunpowder, C4 (plastic explosive), Coal, Firework.
 - **Special**: Black Hole (attracts and consumes particles).
-- **Tools**: Erase, Pencil/Brush size, Override toggle.
+- **Tools**: Erase, Brush size, Override toggle.
 
 ### ⚡ Interactions
-- 🔥 Fire spreads to wood, ignites oil & gas explosively
+- 🔥 Fire spreads to wood, ignites oil, gas, coal, and slime
 - 💧 Water extinguishes fire, creates steam near lava
-- 🧪 Acid dissolves materials with bubbling reactions
+- 🧪 Acid dissolves materials, melts ice fast, reacts with lava
 - 🧊 Ice freezes water, melts near heat sources
-- 🌋 Lava hardens to stone in water, ignites everything
+- 🌋 Lava cools to Magma Rock, remelts when heated
+- ❄️ Cryo freezes water & steam, extinguishes fire, cools lava
+- 🪵 Burning wood creates charcoal (Coal) that can be re-ignited
+- 🎆 Fireworks launch upward and explode into sparks
+- 💥 C4 creates massive explosions with shockwaves
 - ⚫ Black Holes pull in and consume nearby particles!
+- 💨 Particles fall through gases naturally (density-based)
 
 ### 🚀 Performance Optimizations
 | Optimization            | Description                     |

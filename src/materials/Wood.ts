@@ -1,8 +1,9 @@
 import { Grid } from '../core/Grid';
 import { Material } from './Material';
+import { MaterialId } from './MaterialIds';
 
 export class Wood extends Material {
-    id = 5;
+    id = MaterialId.WOOD;
     name = "Wood";
     color = 0x654321; // Dark Mahogany
 
@@ -19,17 +20,17 @@ export class Wood extends Material {
 
         for (const n of neighbors) {
             const id = grid.get(x + n.dx, y + n.dy);
-            if (id === 10) { // Fire - immediately start smoldering
+            if (id === MaterialId.FIRE) { // Fire - immediately start smoldering
                 if (Math.random() < 0.15) {
-                    grid.set(x, y, 13); // Turn to Ember
+                    grid.set(x, y, MaterialId.EMBER); // Turn to Ember
                     grid.setVelocity(x, y, 0.3); // Start with some heat
                     return true;
                 }
-            } else if (id === 13) { // Ember - slowly heat up
+            } else if (id === MaterialId.EMBER) { // Ember - slowly heat up
                 // Get neighbor's heat and transfer some
                 const neighborHeat = grid.getVelocity(x + n.dx, y + n.dy);
                 if (neighborHeat > 0.5 && Math.random() < 0.02) {
-                    grid.set(x, y, 13); // Start smoldering
+                    grid.set(x, y, MaterialId.EMBER); // Start smoldering
                     grid.setVelocity(x, y, 0.1); // Start with low heat
                     return true;
                 }
@@ -42,7 +43,7 @@ export class Wood extends Material {
 }
 
 export class Ember extends Material {
-    id = 13;
+    id = MaterialId.EMBER;
     name = "Ember";
     color = 0xFF5500; // Burning Ember
 
@@ -71,12 +72,12 @@ export class Ember extends Material {
 
             for (const n of neighbors) {
                 const id = grid.get(x + n.dx, y + n.dy);
-                if (id === 0 && Math.random() < 0.20) { // Increased from 0.08 to 0.20 (20% chance)
+                if (id === MaterialId.EMPTY && Math.random() < 0.20) { // Increased from 0.08 to 0.20 (20% chance)
                     // Emit fire or smoke
                     if (Math.random() < 0.8) { // 80% Fire (was 30%)
-                        grid.set(x + n.dx, y + n.dy, 10); // Emit fire
+                        grid.set(x + n.dx, y + n.dy, MaterialId.FIRE); // Emit fire
                     } else {
-                        grid.set(x + n.dx, y + n.dy, 19); // Emit HotSmoke (was 12)
+                        grid.set(x + n.dx, y + n.dy, MaterialId.HOT_SMOKE); // Emit HotSmoke
                     }
                     heat -= 0.05;
                     break;
@@ -95,8 +96,8 @@ export class Ember extends Material {
 
             for (const n of neighbors) {
                 const id = grid.get(x + n.dx, y + n.dy);
-                if (id === 5 && Math.random() < 0.01) { // Wood
-                    grid.set(x + n.dx, y + n.dy, 13); // Turn to Ember
+                if (id === MaterialId.WOOD && Math.random() < 0.01) {
+                    grid.set(x + n.dx, y + n.dy, MaterialId.EMBER); // Turn to Ember
                     grid.setVelocity(x + n.dx, y + n.dy, heat * 0.3); // Transfer some heat
                     heat -= 0.05; // Lose heat when spreading
                 }
@@ -118,11 +119,14 @@ export class Ember extends Material {
         }
 
         if (Math.random() < burnoutChance) {
-            // Burn out to smoke mostly
-            if (Math.random() < 0.8) { // 80% chance for smoke
-                grid.set(x, y, 19); // HotSmoke (was 12)
-            } else {
-                grid.set(x, y, 0); // Empty
+            // Burn out - can leave coal (charcoal), smoke, or just vanish
+            const roll = Math.random();
+            if (roll < 0.3) { // 30% chance to leave Coal (charcoal)
+                grid.set(x, y, MaterialId.COAL);
+            } else if (roll < 0.9) { // 60% chance for smoke
+                grid.set(x, y, MaterialId.HOT_SMOKE);
+            } else { // 10% chance to vanish
+                grid.set(x, y, MaterialId.EMPTY);
             }
             return true;
         }
@@ -133,3 +137,4 @@ export class Ember extends Material {
         return true; // Always "moving" to keep updating
     }
 }
+

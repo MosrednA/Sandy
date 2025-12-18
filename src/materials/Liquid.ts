@@ -1,6 +1,16 @@
 import { Grid } from '../core/Grid';
 import { Material } from './Material';
 import { materialRegistry } from './MaterialRegistry';
+import { GRAVITY } from '../core/Constants';
+import { MaterialId } from './MaterialIds';
+
+// Helper to check if a material is a gas (can be displaced by falling liquids)
+function isGas(id: number): boolean {
+    return id === MaterialId.STEAM ||
+        id === MaterialId.SMOKE ||
+        id === MaterialId.HOT_SMOKE ||
+        id === MaterialId.CRYO;
+}
 
 export abstract class Liquid extends Material {
     // Default density for water-like liquids
@@ -14,7 +24,7 @@ export abstract class Liquid extends Material {
     update(grid: Grid, x: number, y: number): boolean {
         // Gravity
         let velocity = grid.getVelocity(x, y);
-        velocity += 0.5; // Gravity acceleration
+        velocity += GRAVITY; // Gravity acceleration
         if (velocity > 8) velocity = 8; // Terminal velocity
 
         // 1. Viscosity Check (Horizontal Flow limitation) - PRE-CHECK
@@ -87,6 +97,14 @@ export abstract class Liquid extends Material {
                     }
                 } else {
                     // Collision
+                    // Swap with gases (fall through them)
+                    if (isGas(below)) {
+                        grid.swap(currentX, currentY, currentX, nextY);
+                        moved = true;
+                        currentY = nextY;
+                        continue;
+                    }
+
                     if (below === this.id) {
                         // Optimisation: Don't check density against self
                         velocity = 0;

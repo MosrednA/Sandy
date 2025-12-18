@@ -1,8 +1,10 @@
 import { Grid } from '../core/Grid';
 import { Material } from './Material';
+import { MaterialId, Neighbors } from './MaterialIds';
+import { GRAVITY } from '../core/Constants';
 
 export class Fire extends Material {
-    id = 10;
+    id = MaterialId.FIRE;
     name = "Fire";
     color = 0xFF6622; // Warm Orange
 
@@ -13,43 +15,46 @@ export class Fire extends Material {
         if (Math.random() < 0.10) { // 10% chance per frame to die (was 3%) - Limits spark range
             // Turn into smoke - increased smoke production
             if (Math.random() < 0.7) { // 70% chance for smoke (was 30%)
-                grid.set(x, y, 19); // HotSmoke (was 12)
+                grid.set(x, y, MaterialId.HOT_SMOKE);
             } else {
-                grid.set(x, y, 0); // Empty
+                grid.set(x, y, MaterialId.EMPTY);
             }
             return true;
         }
 
-        // 2. Spread to flammables (Oil, Gunpowder, Wood if exists)
-        const neighbors = [
-            { dx: 0, dy: -1 },  // up
-            { dx: 0, dy: 1 },   // down
-            { dx: -1, dy: 0 },  // left
-            { dx: 1, dy: 0 },   // right
-            { dx: -1, dy: -1 }, // diagonals
-            { dx: 1, dy: -1 },
-            { dx: -1, dy: 1 },
-            { dx: 1, dy: 1 },
-        ];
-
-        for (const n of neighbors) {
+        // 2. Spread to flammables and melt ice
+        for (const n of Neighbors.ALL) {
             const nx = x + n.dx;
             const ny = y + n.dy;
             const id = grid.get(nx, ny);
 
-            // Flammables: Oil (9), Gunpowder (11), Wood (5)
-            if (id === 9) { // Oil
+            if (id === MaterialId.OIL) {
                 if (Math.random() < 0.3) {
-                    grid.set(nx, ny, 10); // Ignite Oil -> Fire
+                    grid.set(nx, ny, MaterialId.FIRE);
                 }
-            } else if (id === 5) { // Wood
+            } else if (id === MaterialId.WOOD) {
                 if (Math.random() < 0.08) {
-                    grid.set(nx, ny, 13); // Ignite Wood -> Ember (smoldering)
-                    grid.setVelocity(nx, ny, 0.4); // Start with some heat
+                    grid.set(nx, ny, MaterialId.EMBER);
+                    grid.setVelocity(nx, ny, 0.4);
                 }
-            } else if (id === 11) { // Gunpowder
-                // Gunpowder explodes!
+            } else if (id === MaterialId.GUNPOWDER) {
                 this.explode(grid, nx, ny);
+            } else if (id === MaterialId.ICE) {
+                // Fire melts Ice → Water
+                if (Math.random() < 0.15) {
+                    grid.set(nx, ny, MaterialId.WATER);
+                }
+            } else if (id === MaterialId.COAL) {
+                // Fire ignites Coal → Ember (slow to catch)
+                if (Math.random() < 0.03) {
+                    grid.set(nx, ny, MaterialId.EMBER);
+                    grid.setVelocity(nx, ny, 1.2); // Higher heat for longer burn
+                }
+            } else if (id === MaterialId.POISON) { // Slime
+                // Slime is flammable!
+                if (Math.random() < 0.1) {
+                    grid.set(nx, ny, MaterialId.FIRE);
+                }
             }
         }
 
@@ -60,7 +65,7 @@ export class Fire extends Material {
 
         if (targetY >= 0 && targetX >= 0 && targetX < grid.width) {
             const above = grid.get(targetX, targetY);
-            if (above === 0) {
+            if (above === MaterialId.EMPTY) {
                 grid.move(x, y, targetX, targetY);
                 return true;
             }
@@ -69,7 +74,7 @@ export class Fire extends Material {
         // 4. Random flicker sideways if blocked
         const side = Math.random() < 0.5 ? -1 : 1;
         const sideContent = grid.get(x + side, y);
-        if (sideContent === 0) {
+        if (sideContent === MaterialId.EMPTY) {
             grid.move(x, y, x + side, y);
             return true;
         }
@@ -78,13 +83,13 @@ export class Fire extends Material {
     }
 
     private explode(grid: Grid, cx: number, cy: number) {
-        const radius = 5 + Math.floor(Math.random() * 3);
-        EnergeticsUtils.explode(grid, cx, cy, radius, 10); // Self ID meaningless for fire but whatever
+        const radius = 3 + Math.floor(Math.random() * 2); // Reduced from 5-8 to 3-5
+        EnergeticsUtils.explode(grid, cx, cy, radius, MaterialId.FIRE);
     }
 }
 
 export class Gunpowder extends Material {
-    id = 11;
+    id = MaterialId.GUNPOWDER;
     name = "Gunpowder";
     color = 0x2A2A2A; // Dark Gunpowder
 
@@ -92,16 +97,9 @@ export class Gunpowder extends Material {
         // Gunpowder behaves like Sand but explodes when touched by Fire
 
         // Check for Fire neighbors
-        const neighbors = [
-            { dx: 0, dy: -1 },
-            { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 },
-            { dx: 1, dy: 0 },
-        ];
-
-        for (const n of neighbors) {
+        for (const n of Neighbors.CARDINAL) {
             const id = grid.get(x + n.dx, y + n.dy);
-            if (id === 10) { // Fire
+            if (id === MaterialId.FIRE) {
                 this.explode(grid, x, y);
                 return true;
             }
@@ -109,7 +107,7 @@ export class Gunpowder extends Material {
 
         // Standard Sand physics
         let velocity = grid.getVelocity(x, y);
-        velocity += 0.5;
+        velocity += GRAVITY;
         if (velocity > 8) velocity = 8;
 
         const steps = Math.floor(velocity);
@@ -121,7 +119,7 @@ export class Gunpowder extends Material {
             const nextY = currentY + 1;
             const below = grid.get(currentX, nextY);
 
-            if (below === 0) {
+            if (below === MaterialId.EMPTY) {
                 grid.move(currentX, currentY, currentX, nextY);
                 moved = true;
                 currentY = nextY;
@@ -131,12 +129,12 @@ export class Gunpowder extends Material {
                 const diagonal1 = grid.get(currentX + dir, nextY);
                 const diagonal2 = grid.get(currentX - dir, nextY);
 
-                if (diagonal1 === 0) {
+                if (diagonal1 === MaterialId.EMPTY) {
                     grid.move(currentX, currentY, currentX + dir, nextY);
                     moved = true;
                     currentX += dir;
                     currentY = nextY;
-                } else if (diagonal2 === 0) {
+                } else if (diagonal2 === MaterialId.EMPTY) {
                     grid.move(currentX, currentY, currentX - dir, nextY);
                     moved = true;
                     currentX -= dir;
@@ -154,8 +152,8 @@ export class Gunpowder extends Material {
     }
 
     private explode(grid: Grid, cx: number, cy: number) {
-        const radius = 5 + Math.floor(Math.random() * 3);
-        EnergeticsUtils.explode(grid, cx, cy, radius, 11);
+        const radius = 4 + Math.floor(Math.random() * 2); // Reduced from 5-8 to 4-6
+        EnergeticsUtils.explode(grid, cx, cy, radius, MaterialId.GUNPOWDER);
     }
 }
 
@@ -171,21 +169,26 @@ class EnergeticsUtils {
                     const ny = cy + dy;
                     const id = grid.get(nx, ny);
 
-                    if (id === 255 || id === undefined) continue;
+                    if (id === MaterialId.WALL || id === undefined) continue;
 
-                    if (id === 0) {
-                        if (Math.random() < 0.2) grid.set(nx, ny, Math.random() < 0.5 ? 10 : 19);
+                    if (id === MaterialId.EMPTY) {
+                        if (Math.random() < 0.2) grid.set(nx, ny, Math.random() < 0.5 ? MaterialId.FIRE : MaterialId.HOT_SMOKE);
                         continue;
                     }
 
+                    // Explosives ALWAYS chain-react (no chance to survive)
+                    if (id === selfID || id === MaterialId.GUNPOWDER || id === MaterialId.C4) {
+                        grid.set(nx, ny, MaterialId.FIRE);
+                        continue;
+                    }
+
+                    // Other materials have a chance-based destruction
                     const chance = 1 - (Math.sqrt(dist2) / radius) * 0.8;
                     if (Math.random() < chance) {
-                        if (id === selfID || id === 11 || id === 21) {
-                            grid.set(nx, ny, 10);
-                        } else if (id !== 1 && id !== 7) {
-                            grid.set(nx, ny, 19);
+                        if (id !== MaterialId.STONE && id !== MaterialId.STEAM) {
+                            grid.set(nx, ny, MaterialId.HOT_SMOKE);
                         } else {
-                            if (radius > 10 && Math.random() < 0.3) grid.set(nx, ny, 0);
+                            if (radius > 10 && Math.random() < 0.3) grid.set(nx, ny, MaterialId.EMPTY);
                         }
                     }
                 }
@@ -224,31 +227,27 @@ class EnergeticsUtils {
                         const ny = cy + dy;
                         const id = grid.get(nx, ny);
 
-                        if (id !== 0 && id !== 255 && id !== 1 && id !== 7) { // Don't push walls/stone
+                        // Don't push walls/stone/steam
+                        if (id !== MaterialId.EMPTY && id !== MaterialId.WALL && id !== MaterialId.STONE && id !== MaterialId.STEAM) {
                             // Push Vector
                             const dist = Math.sqrt(dist2);
                             const force = (shockRadius - dist) / (shockRadius - radius); // 1.0 at inner, 0.0 at outer
 
                             if (force > 0.1) {
-                                // Push Distance
-                                const pushDist = Math.max(1, Math.floor(force * radius * 0.5));
-
+                                // Launch into Off-Grid Particle System
                                 const dirX = dx / dist;
                                 const dirY = dy / dist;
 
-                                const tx = Math.round(nx + dirX * pushDist);
-                                const ty = Math.round(ny + dirY * pushDist);
+                                // Randomize velocity slightly (reduced from 5-25 to 2-10)
+                                const speed = 2 + force * 6 + Math.random() * 2;
+                                const vx = dirX * speed;
+                                const vy = dirY * speed - 1; // Slight upward bias
 
-                                if (grid.get(tx, ty) === 0) {
-                                    // Move particle physically
-                                    grid.move(nx, ny, tx, ty);
-                                    // Add upward velocity if kicking up
-                                    if (dirY < 0) {
-                                        grid.setVelocity(tx, ty, -5 * force);
-                                    }
-                                } else {
-                                    // Try to swap? No, makes a mess. Just fail.
-                                }
+
+
+                                grid.set(nx, ny, MaterialId.EMPTY); // Remove from grid
+                                grid.addOffGridParticle(nx, ny, vx, vy, id, 0); // Color 0 for now, lookup later?
+
                             }
                         }
                     }
@@ -259,24 +258,14 @@ class EnergeticsUtils {
 }
 
 export class C4 extends Material {
-    id = 21;
+    id = MaterialId.C4;
     name = "C4";
     color = 0xDDDDDD; // Off-white plastic explosive
 
     update(grid: Grid, x: number, y: number): boolean {
-        // C4 is static solid (doesn't fall)
-        // Checks for Fire/Electric trigger
-
-        const neighbors = [
-            { dx: 0, dy: -1 },
-            { dx: 0, dy: 1 },
-            { dx: -1, dy: 0 },
-            { dx: 1, dy: 0 },
-        ];
-
-        for (const n of neighbors) {
+        for (const n of Neighbors.CARDINAL) {
             const id = grid.get(x + n.dx, y + n.dy);
-            if (id === 10 || id === 13 || id === 14) { // Fire, Ember, Lava
+            if (id === MaterialId.FIRE || id === MaterialId.EMBER || id === MaterialId.LAVA) {
                 this.explode(grid, x, y);
                 return true;
             }
@@ -285,8 +274,9 @@ export class C4 extends Material {
     }
 
     private explode(grid: Grid, cx: number, cy: number) {
-        // C4 has HUGE radius
-        const radius = 15;
-        EnergeticsUtils.explode(grid, cx, cy, radius, 21);
+        // C4 has large radius (reduced from 15 to 10)
+        const radius = 10;
+        EnergeticsUtils.explode(grid, cx, cy, radius, MaterialId.C4);
     }
 }
+

@@ -12,6 +12,9 @@ export class WorkerManager {
     // and pass it to workers.
     currentActiveChunks: Uint8Array;
 
+    // Aggregated off-grid particles for rendering
+    activeParticles: any[] = []; // Using any to avoid importing type issues for now, or import it.
+
     constructor(sharedMemory: SharedMemory) {
         this.sharedMemory = sharedMemory;
         this.workerCount = navigator.hardwareConcurrency || 4;
@@ -78,6 +81,9 @@ export class WorkerManager {
         this.currentActiveChunks.set(chunkState);
         chunkState.fill(0); // Clear for writing next frame's info
 
+        // Clear particles from previous frame
+        this.activeParticles = [];
+
         // Generate Jitter
         const jitterX = Math.floor(Math.random() * CHUNK_SIZE);
         const jitterY = Math.floor(Math.random() * CHUNK_SIZE);
@@ -109,6 +115,14 @@ export class WorkerManager {
 
             const onDone = (e: MessageEvent) => {
                 if (e.data.type === 'DONE') {
+                    // Collect particles from worker
+                    if (e.data.particles) {
+                        // NOTE: This assumes RED phase sends particles.
+                        // We aggregate them.
+                        // Since we clear activeParticles at start of update, we just append here.
+                        this.activeParticles.push(...e.data.particles);
+                    }
+
                     completed++;
                     if (completed === target) {
                         // All workers done

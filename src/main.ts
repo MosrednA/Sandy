@@ -27,6 +27,7 @@ app.innerHTML = `
                     <button class="mat-btn" data-id="1" data-name="Stone" data-tip="Indestructible solid block." style="--btn-color: #888888"></button>
                     <button class="mat-btn" data-id="5" data-name="Wood" data-tip="Solid. Burns when touched by fire." style="--btn-color: #8B4513"></button>
                     <button class="mat-btn" data-id="15" data-name="Ice" data-tip="Freezes water. Melts near fire." style="--btn-color: #AADDFF"></button>
+                    <button class="mat-btn" data-id="22" data-name="Magma" data-tip="Cooled lava. Remelts when heated." style="--btn-color: #442222"></button>
                 </div>
             </div>
             <div class="category">
@@ -44,6 +45,7 @@ app.innerHTML = `
                 <div class="material-group">
                     <button class="mat-btn" data-id="7" data-name="Steam" data-tip="Rises slowly. Turns back to water." style="--btn-color: #DDEEFF"></button>
                     <button class="mat-btn" data-id="17" data-name="Gas" data-tip="Rises and spreads. EXPLODES with fire!" style="--btn-color: #FFFF88"></button>
+                    <button class="mat-btn" data-id="23" data-name="Cryo" data-tip="Freezing gas. Freezes water, extinguishes fire." style="--btn-color: #88FFFF"></button>
                 </div>
             </div>
             <div class="category">
@@ -52,6 +54,8 @@ app.innerHTML = `
                     <button class="mat-btn" data-id="10" data-name="Fire" data-tip="Spreads to flammables. Creates smoke." style="--btn-color: #FF4400"></button>
                     <button class="mat-btn" data-id="11" data-name="Powder" data-tip="Gunpowder! Explodes when ignited." style="--btn-color: #444444"></button>
                     <button class="mat-btn" data-id="21" data-name="C4" data-tip="Plastic explosive. Sticks to walls. BIG BOOM." style="--btn-color: #DDDDDD"></button>
+                    <button class="mat-btn" data-id="24" data-name="Coal" data-tip="Burns slowly. Long-lasting fire source." style="--btn-color: #333333"></button>
+                    <button class="mat-btn" data-id="25" data-name="Firework" data-tip="Launches up and explodes into sparks!" style="--btn-color: #FF00FF"></button>
                 </div>
             </div>
             <div class="category">
@@ -72,8 +76,6 @@ app.innerHTML = `
             </div>
             <div class="action-group">
                 <button id="clear-btn" class="action-btn">Clear</button>
-
-                <button id="open-demo-btn" class="action-btn" style="background: rgba(100, 255, 100, 0.2); color: #88ff88;">Demos</button>
                 <button id="open-sl-btn" class="action-btn" style="background: rgba(68, 136, 255, 0.2); color: #88bbff;">Save/Load</button>
                 <label class="toggle-label">
                     <input type="checkbox" id="override-toggle" checked>
@@ -219,12 +221,7 @@ openSlBtn.addEventListener('click', () => {
   saveLoadUI.show();
 });
 
-import { DemoManager } from './ui/DemoManager';
-const demoManager = new DemoManager(world);
-const openDemoBtn = document.getElementById('open-demo-btn')!;
-openDemoBtn.addEventListener('click', () => {
-  demoManager.show();
-});
+
 
 // Override toggle
 const overrideToggle = document.querySelector<HTMLInputElement>('#override-toggle')!;
@@ -240,8 +237,20 @@ let lastTime = performance.now();
 let frames = 0;
 let lastFpsTime = lastTime;
 
-// 5. Game Loop
-async function loop() {
+// 5. Game Loop - Capped at 60 FPS for consistent physics
+const TARGET_FPS = 60;
+const FRAME_TIME = 1000 / TARGET_FPS;
+let lastFrameTime = 0;
+
+async function loop(timestamp: number = 0) {
+  // FPS Cap: Skip frame if not enough time has passed
+  const elapsed = timestamp - lastFrameTime;
+  if (elapsed < FRAME_TIME) {
+    requestAnimationFrame(loop);
+    return;
+  }
+  lastFrameTime = timestamp - (elapsed % FRAME_TIME); // Maintain timing accuracy
+
   const now = performance.now();
   frames++;
 
@@ -257,7 +266,7 @@ async function loop() {
   await workerManager.update();
 
   // Draw result
-  renderer.draw();
+  renderer.draw(workerManager.activeParticles);
 
   requestAnimationFrame(loop);
 }

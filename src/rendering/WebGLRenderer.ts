@@ -70,6 +70,7 @@ export class WebGLRenderer {
         this.glowMaterials[13] = 1; // Ember
         this.glowMaterials[14] = 1; // Lava
         this.glowMaterials[18] = 1; // Black Hole
+        this.glowMaterials[25] = 1; // Firework
 
         // Create PixiJS Application
         this.app = new Application();
@@ -141,7 +142,8 @@ export class WebGLRenderer {
         console.log('WebGL Renderer initialized (optimized)');
     }
 
-    draw() {
+    // Draw particles
+    draw(particles?: any[]) {
         if (!this.initialized) return;
 
         const cells = this.world.grid.cells;
@@ -176,6 +178,32 @@ export class WebGLRenderer {
 
                 if (glowMats[id]) {
                     glow[i] = variants[(id << 2)]; // Use base color for glow? Or variant? Base is cleaner.
+                }
+            }
+        }
+
+        // Overlay Off-Grid Particles
+        if (particles) {
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                const x = Math.floor(p.x);
+                const y = Math.floor(p.y);
+
+                if (x >= 0 && x < WORLD_WIDTH && y >= 0 && y < WORLD_HEIGHT) {
+                    const idx = y * WORLD_WIDTH + x;
+                    const id = p.id;
+
+                    // Lookup color
+                    // We use the base variant (0) or random?
+                    // Let's use noise for consistency if we can access it, or just base.
+                    // Accessing noise[idx] is fine.
+                    const col = variants[(id << 2) + noise[idx]] || 0xFFFFFFFF;
+                    buf[idx] = col;
+
+                    // Glow if material glows
+                    if (glowMats[id]) {
+                        glow[idx] = variants[(id << 2)];
+                    }
                 }
             }
         }
