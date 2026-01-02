@@ -1,4 +1,4 @@
-import { Application, Texture, Sprite, Container, BlurFilter } from 'pixi.js';
+import { Application, Texture, Sprite, Container, BlurFilter, Graphics } from 'pixi.js';
 import { World } from '../core/World';
 import { materialRegistry } from '../materials/MaterialRegistry';
 import { WORLD_WIDTH, WORLD_HEIGHT } from '../core/Constants';
@@ -25,9 +25,17 @@ export class WebGLRenderer {
     // Glow material IDs (Fire, Ember, Lava, Acid)
     private glowMaterials: Uint8Array = new Uint8Array(256);
 
+    // Debug
+    private debugGraphics: Graphics;
+    public showDebug: boolean = false;
+    public showTemperature: boolean = false;
+
     // Pre-computed colors with variations
     // Layout: [Mat0_Var0, Mat0_Var1, Mat0_Var2, Mat0_Var3, Mat1_Var0...]
     private colorVariants!: Uint32Array;
+
+    // Pre-computed heatmap colors (0-2000 degrees)
+    private heatmapColors: Uint32Array = new Uint32Array(2001);
 
     // Per-pixel noise buffer (stores index 0-3)
     private noiseBuffer: Uint8Array;
@@ -71,6 +79,7 @@ export class WebGLRenderer {
         this.glowMaterials[14] = 1; // Lava
         this.glowMaterials[18] = 1; // Black Hole
         this.glowMaterials[25] = 1; // Firework
+        this.glowMaterials[29] = 1; // Plasma
 
         // Create PixiJS Application
         this.app = new Application();
@@ -81,6 +90,7 @@ export class WebGLRenderer {
         this.glowContainer = new Container();
         this.glowSprite = new Sprite();
         this.glowTexture = Texture.EMPTY;
+        this.debugGraphics = new Graphics(); // Debug layer
 
         this.init(canvas);
     }
@@ -97,8 +107,8 @@ export class WebGLRenderer {
             resizeTo: window,
         });
 
-        // Initialize color variants from registry
         this.initColorVariants(materialRegistry.colors);
+        this.initHeatmapColors();
 
         // Create textures
         this.texture = Texture.from({
@@ -131,6 +141,10 @@ export class WebGLRenderer {
         this.glowContainer.addChild(this.glowSprite);
         this.app.stage.addChild(this.glowContainer);
 
+        // Debug Layer
+        this.debugGraphics.visible = false;
+        this.app.stage.addChild(this.debugGraphics);
+
         window.addEventListener('resize', () => {
             this.sprite.width = window.innerWidth;
             this.sprite.height = window.innerHeight;
@@ -147,6 +161,7 @@ export class WebGLRenderer {
         if (!this.initialized) return;
 
         const cells = this.world.grid.cells;
+        const temp = this.world.grid.temperature;
         const buf = this.pixelData32;
         const glow = this.glowData32;
         const variants = this.colorVariants;
@@ -161,23 +176,30 @@ export class WebGLRenderer {
         // Clear glow buffer
         glow.fill(0);
 
-        // Single pass - optimized hot loop
-        for (let i = 0; i < len; i++) {
-            const id = cells[i];
+        if (this.showTemperature) {
+            // HEATMAP MODE (Optimized with LUT)
+            const lut = this.heatmapColors;
+            for (let i = 0; i < len; i++) {
+                const t = Math.floor(temp[i]); // Ensure integer index
+                // Clamp to LUT size (0-2000)
+                const idx = (t < 0) ? 0 : (t > 2000) ? 2000 : t;
+                buf[i] = lut[idx];
+            }
+        } else {
+            // NORMAL MODE
+            for (let i = 0; i < len; i++) {
+                const id = cells[i];
 
-            if (id === 0) {
-                buf[i] = bgColor;
-            } else if (id === bhId) {
-                buf[i] = bhColor;
-                glow[i] = bhGlow;
-            } else {
-                // Use pre-computed variant based on noise buffer
-                // id << 2 multiplies by 4 (to get to the block of variants)
-                // noise[i] is 0..3 (offset within block)
-                buf[i] = variants[(id << 2) + noise[i]] || bgColor;
-
-                if (glowMats[id]) {
-                    glow[i] = variants[(id << 2)]; // Use base color for glow? Or variant? Base is cleaner.
+                if (id === 0) {
+                    buf[i] = bgColor;
+                } else if (id === bhId) {
+                    buf[i] = bhColor;
+                    glow[i] = bhGlow;
+                } else {
+                    buf[i] = variants[(id << 2) + noise[i]] || bgColor;
+                    if (glowMats[id]) {
+                        glow[i] = variants[(id << 2)];
+                    }
                 }
             }
         }
@@ -211,6 +233,27 @@ export class WebGLRenderer {
         // Update textures
         this.texture.source.update();
         this.glowTexture.source.update();
+
+        // Update Debug Graphics
+        if (this.showDebug) {
+            this.updateDebugOverlay();
+        }
+    }
+
+    private updateDebugOverlay() {
+        const g = this.debugGraphics;
+        g.clear();
+        // Debug chunks removed by user request
+    }
+
+    public toggleDebug(enabled: boolean) {
+        this.showDebug = enabled;
+        this.debugGraphics.visible = enabled;
+        if (!enabled) this.debugGraphics.clear();
+    }
+
+    public toggleHeatmap(enabled: boolean) {
+        this.showTemperature = enabled;
     }
 
     private initColorVariants(baseColors: Uint32Array) {
@@ -221,21 +264,12 @@ export class WebGLRenderer {
             const color = baseColors[id];
             if (color === 0) continue; // Skip empty/invalid
 
-            // Extract ABGR components (Little Endian)
-            // 0xAABBGGRR
             const r = color & 0xFF;
             const g = (color >> 8) & 0xFF;
             const b = (color >> 16) & 0xFF;
             const a = (color >> 24) & 0xFF;
 
-            // Generate 4 variants
             for (let v = 0; v < 4; v++) {
-                // Variation factor: -10 to +10 roughly
-                // v=0: Base
-                // v=1: Darker
-                // v=2: Lighter
-                // v=3: Slightly different tone
-
                 let r2 = r, g2 = g, b2 = b;
 
                 if (v === 1) {
@@ -247,13 +281,41 @@ export class WebGLRenderer {
                     g2 = Math.min(255, g + 15);
                     b2 = Math.min(255, b + 15);
                 } else if (v === 3) {
-                    // Shift tint slightly (e.g. more red/less blue)
                     r2 = Math.min(255, r + 8);
                     b2 = Math.max(0, b - 8);
                 }
 
-                // Recombine
                 this.colorVariants[(id * 4) + v] = (a << 24) | (b2 << 16) | (g2 << 8) | r2;
+            }
+        }
+    }
+
+    private initHeatmapColors() {
+        // Pre-compute 0-2000 degree colors
+        for (let t = 0; t <= 2000; t++) {
+            if (t <= 20) {
+                this.heatmapColors[t] = 0xFF000000; // Black/Ambient
+            } else {
+                let r = 0, g = 0, b = 0;
+                if (t < 100) {
+                    const p = (t - 20) / 80;
+                    b = Math.floor(255 * (1 - p));
+                    g = Math.floor(255 * p);
+                } else if (t < 500) {
+                    const p = (t - 100) / 400;
+                    g = 255;
+                    r = Math.floor(255 * p);
+                } else if (t < 1000) {
+                    const p = (t - 500) / 500;
+                    r = 255;
+                    g = Math.floor(255 * (1 - p));
+                } else {
+                    const p = Math.min(1, (t - 1000) / 1000);
+                    r = 255;
+                    g = Math.floor(255 * p);
+                    b = Math.floor(255 * p);
+                }
+                this.heatmapColors[t] = (255 << 24) | (b << 16) | (g << 8) | (r << 0);
             }
         }
     }

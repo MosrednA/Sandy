@@ -7,6 +7,7 @@ export class Fire extends Material {
     id = MaterialId.FIRE;
     name = "Fire";
     color = 0xFF6622; // Warm Orange
+    conductivity = 0.8; // Radiates heat quickly
 
     update(grid: Grid, x: number, y: number): boolean {
         // Fire rises and spreads to flammables, then dies out
@@ -71,6 +72,7 @@ export class Gunpowder extends Material {
     id = MaterialId.GUNPOWDER;
     name = "Gunpowder";
     color = 0x2A2A2A; // Dark Gunpowder
+    conductivity = 0.15; // Poor conductor
 
     update(grid: Grid, x: number, y: number): boolean {
         // Gunpowder behaves like Sand but explodes when hot
@@ -259,6 +261,7 @@ export class C4 extends Material {
     id = MaterialId.C4;
     name = "C4";
     color = 0xDDDDDD; // Off-white plastic explosive
+    conductivity = 0.1; // Insulator
 
     update(grid: Grid, x: number, y: number): boolean {
         // Temperature-based detonation (>100° - very sensitive!)

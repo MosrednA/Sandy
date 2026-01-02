@@ -124,6 +124,7 @@ export class InputHandler {
     clearCanvas() {
         this.world.grid.cells.fill(0);
         this.world.grid.velocity.fill(0);
+        this.world.grid.temperature.fill(20); // Reset to ambient temp
         this.world.grid.chunks.fill(1); // Wake all chunks
     }
 }

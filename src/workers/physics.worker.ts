@@ -10,9 +10,7 @@ registerAllMaterials();
 let world: World;
 let assignedChunks: { cx: number, cy: number }[] = [];
 let workerId = -1;
-// Reserved for future chunk sleeping optimization
-// @ts-expect-error Reserved for future use
-let _currentActiveChunks: Uint8Array | null = null;
+
 let jitterX = 0;
 let jitterY = 0;
 
@@ -35,9 +33,7 @@ self.onmessage = (e) => {
         const phase = data.phase as Phase;
 
         // Receive activeChunks snapshot for sleep optimization
-        if (data.activeChunks) {
-            _currentActiveChunks = new Uint8Array(data.activeChunks);
-        }
+
 
         if (data.jitterX !== undefined) jitterX = data.jitterX;
         if (data.jitterY !== undefined) jitterY = data.jitterY;
@@ -45,54 +41,111 @@ self.onmessage = (e) => {
         runPhase(phase);
 
         // Process Physics once per frame (Phase RED is start of frame)
-        let particlesToSend: OffGridParticle[] | undefined;
+        let particleBuffer: ArrayBuffer | undefined;
+        let particleCount = 0;
+
         if (phase === Phase.RED) {
-            processHeatConduction(); // NEW: Spread heat between neighbors
+            processHeatConduction();
             processOffGridParticles();
-            particlesToSend = offGridParticles;
+
+            // BATCH MESSAGE PASSING: Pack particles into a Transferable Float32Array
+            // Layout: [x, y, vx, vy, id, color] per particle (6 floats each)
+            if (offGridParticles.length > 0) {
+                particleCount = offGridParticles.length;
+                const buffer = new Float32Array(particleCount * 6);
+                for (let i = 0; i < particleCount; i++) {
+                    const p = offGridParticles[i];
+                    const offset = i * 6;
+                    buffer[offset] = p.x;
+                    buffer[offset + 1] = p.y;
+                    buffer[offset + 2] = p.vx;
+                    buffer[offset + 3] = p.vy;
+                    buffer[offset + 4] = p.id;
+                    buffer[offset + 5] = p.color;
+                }
+                particleBuffer = buffer.buffer;
+            }
         }
 
-        // Notify done
-        self.postMessage({ type: 'DONE', workerId, particles: particlesToSend });
+        // Notify done - use Transferable for particle buffer to avoid copying
+        if (particleBuffer) {
+            self.postMessage(
+                { type: 'DONE', workerId, particleBuffer, particleCount },
+                { transfer: [particleBuffer] } // Transfer ownership, zero-copy
+            );
+        } else {
+            self.postMessage({ type: 'DONE', workerId });
+        }
     }
 };
 
 // NEW: Heat conduction - spread temperature between neighboring particles
+// Uses per-material conductivity and only processes active chunks
 function processHeatConduction() {
     const grid = world.grid;
-    const width = grid.width;
-    const height = grid.height;
     const temp = grid.temperature;
     const cells = grid.cells;
+    const width = grid.width;
 
-    // Conduction rate (0-1, higher = faster spread)
-    const CONDUCTION = 0.2; // 20% blend per frame (was 5%)
+    // Process only assigned chunks that are active
+    for (const chunk of assignedChunks) {
+        const { cx, cy } = chunk;
 
-    // Process every particle for visible effect
-    for (let y = 1; y < height - 1; y++) {
-        for (let x = 1; x < width - 1; x++) {
-            const idx = y * width + x;
-            if (cells[idx] === 0) continue; // Skip empty
+        // Skip sleeping chunks (no moving particles)
+        const chunkIdx = cy * grid.cols + cx;
+        if (!grid.activeChunks[chunkIdx]) continue;
 
-            const currentTemp = temp[idx];
-            let avgTemp = currentTemp;
-            let count = 1;
+        // Calculate chunk bounds
+        const startX = Math.max(1, cx * CHUNK_SIZE);
+        const endX = Math.min(width - 1, (cx + 1) * CHUNK_SIZE);
+        const startY = Math.max(1, cy * CHUNK_SIZE);
+        const endY = Math.min(grid.height - 1, (cy + 1) * CHUNK_SIZE);
 
-            // Check 4 cardinal neighbors
-            const up = idx - width;
-            const down = idx + width;
-            const left = idx - 1;
-            const right = idx + 1;
+        // Process cells in this chunk
+        // Use pre-computed conductivity LUT for performance
+        const conductivityLUT = materialRegistry.conductivities;
 
-            if (cells[up] !== 0 && cells[up] !== 255) { avgTemp += temp[up]; count++; }
-            if (cells[down] !== 0 && cells[down] !== 255) { avgTemp += temp[down]; count++; }
-            if (cells[left] !== 0 && cells[left] !== 255) { avgTemp += temp[left]; count++; }
-            if (cells[right] !== 0 && cells[right] !== 255) { avgTemp += temp[right]; count++; }
+        for (let y = startY; y < endY; y++) {
+            for (let x = startX; x < endX; x++) {
+                const idx = y * width + x;
+                const cellId = cells[idx];
+                if (cellId === 0) continue; // Skip empty
 
-            // Blend towards average
-            if (count > 1) {
-                const target = avgTemp / count;
-                temp[idx] = currentTemp + (target - currentTemp) * CONDUCTION;
+                // Get this material's conductivity from LUT (no function call)
+                const conductivity = conductivityLUT[cellId];
+
+                const currentTemp = temp[idx];
+                let avgTemp = currentTemp;
+                let count = 1;
+
+                // Check 4 cardinal neighbors
+                const up = idx - width;
+                const down = idx + width;
+                const left = idx - 1;
+                const right = idx + 1;
+
+                // Helper to add neighbor with averaged conductivity (uses LUT)
+                const addNeighbor = (nIdx: number) => {
+                    const nId = cells[nIdx];
+                    if (nId !== 0 && nId !== 255) {
+                        const nCond = conductivityLUT[nId];
+                        // Use geometric mean of conductivities
+                        const blendCond = Math.sqrt(conductivity * nCond);
+                        avgTemp += temp[nIdx] * blendCond;
+                        count += blendCond;
+                    }
+                };
+
+                addNeighbor(up);
+                addNeighbor(down);
+                addNeighbor(left);
+                addNeighbor(right);
+
+                // Blend towards weighted average
+                if (count > 1) {
+                    const target = avgTemp / count;
+                    temp[idx] = currentTemp + (target - currentTemp) * conductivity;
+                }
             }
         }
     }
@@ -132,10 +185,25 @@ function processOffGridParticles() {
         const ix = Math.floor(nextX);
         const iy = Math.floor(nextY);
 
-        // If hitting a solid/liquid (non-empty)
+        // If hitting a solid/liquid (non-empty, non-gas)
         const hitId = grid.get(ix, iy);
-        if (hitId !== 0 && hitId !== 255) { // 255 is boundary, handled above logic
-            // Hit something! Re-integrate.
+        const hitMat = hitId !== 0 ? materialRegistry.get(hitId) : null;
+        const hitIsGas = hitMat?.isGas ?? false;
+
+        // Swap with gases (steam, smoke, etc.) - move the gas to previous position
+        if (hitIsGas) {
+            const prevIX = Math.floor(p.x);
+            const prevIY = Math.floor(p.y);
+            // Swap: put gas at previous position (if empty), continue moving
+            if (grid.get(prevIX, prevIY) === 0) {
+                grid.set(prevIX, prevIY, hitId);
+                grid.set(ix, iy, 0); // Clear gas from target
+            }
+            // Move through
+            p.x = nextX;
+            p.y = nextY;
+        } else if (hitId !== 0 && hitId !== 255) {
+            // Hit something solid! Re-integrate.
             const prevIX = Math.floor(p.x);
             const prevIY = Math.floor(p.y);
 
@@ -174,7 +242,7 @@ function processOffGridParticles() {
 
             offGridParticles.splice(i, 1);
         } else {
-            // Move free
+            // Move free (empty or boundary already handled)
             p.x = nextX;
             p.y = nextY;
         }
@@ -225,6 +293,9 @@ function runPhase(phase: Phase) {
         else if (isYellow && !cxEven && !cyEven) match = true;
 
         if (!match) continue;
+
+        // NOTE: Chunk sleeping optimization removed - was causing particles to freeze.
+        // The wake propagation logic needs more work before this can be re-enabled.
 
         // Process Chunk with JITTER offset
         let startChunkX = cx * CHUNK_SIZE + jitterX;

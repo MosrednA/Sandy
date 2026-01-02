@@ -11,6 +11,9 @@ class MaterialRegistry {
     // Density Lookup Table (0 = No Density/Solid, >0 = Liquid Density)
     public densities: Uint8Array = new Uint8Array(256);
 
+    // Conductivity Lookup Table for heat conduction (default 0.2)
+    public conductivities: Float32Array = new Float32Array(256).fill(0.2);
+
     register(material: Material) {
         if (this.materials[material.id]) {
             console.warn(`Material with ID ${material.id} already registered. Overwriting.`);
@@ -49,22 +52,12 @@ class MaterialRegistry {
             // If Stone (1) has no density, it is 0.
             // Water(10) checks Stone(0). 0 < 10. Swap?
             // YES, Water would sink through Stone if Stone is 0!
-            // Solution: Solids should have MAX_DENSITY (255) effectively?
-            // But logic is: `if (other.density < this.density)`.
-            // We want to sink through LIGHTER things.
-            // So Solids should be HEAVIER (255).
+            // Solids should be HEAVIER (255) to prevent liquids sinking through them
             this.densities[material.id] = 255;
         }
 
-        // Exception: Empty (0) should be 0? 
-        // We handle Empty check explicitly `if (below === 0)`.
-        // But if we didn't, we want Water(10) to move into Empty(0)?
-        // Yes, 0 < 10. So Swap. (Move).
-
-        // What about Gas? Steam?
-        // If Gas has no density defined? 
-        // Gas should be light.
-        // Let's check definitions.
+        // Populate Conductivity LUT
+        this.conductivities[material.id] = material.conductivity ?? 0.2;
     }
 
     // Inlined for performance - avoid function call overhead in hot paths

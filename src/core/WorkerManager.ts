@@ -97,12 +97,7 @@ export class WorkerManager {
             [phases[i], phases[j]] = [phases[j], phases[i]];
         }
 
-        // We pass currentActiveChunks to the FIRST phase (whatever it is) just in case,
-        // though we currently ignore it in the worker.
-        // Actually, we only need to pass it if we use it.
-        // For now, let's just pass undefined or keep passing it to all if simpler?
-        // Let's pass it to the first one.
-
+        // Pass activeChunks snapshot to all phases for chunk sleeping optimization
         await this.runPhase(phases[0], this.currentActiveChunks, jitterX, jitterY);
         await this.runPhase(phases[1], this.currentActiveChunks, jitterX, jitterY);
         await this.runPhase(phases[2], this.currentActiveChunks, jitterX, jitterY);
@@ -116,12 +111,22 @@ export class WorkerManager {
 
             const onDone = (e: MessageEvent) => {
                 if (e.data.type === 'DONE') {
-                    // Collect particles from worker
-                    if (e.data.particles) {
-                        // NOTE: This assumes RED phase sends particles.
-                        // We aggregate them.
-                        // Since we clear activeParticles at start of update, we just append here.
-                        this.activeParticles.push(...e.data.particles);
+                    // BATCH MESSAGE PASSING: Unpack particles from Transferable ArrayBuffer
+                    if (e.data.particleBuffer && e.data.particleCount > 0) {
+                        const buffer = new Float32Array(e.data.particleBuffer);
+                        const count = e.data.particleCount;
+                        // Layout: [x, y, vx, vy, id, color] per particle (6 floats each)
+                        for (let i = 0; i < count; i++) {
+                            const offset = i * 6;
+                            this.activeParticles.push({
+                                x: buffer[offset],
+                                y: buffer[offset + 1],
+                                vx: buffer[offset + 2],
+                                vy: buffer[offset + 3],
+                                id: buffer[offset + 4],
+                                color: buffer[offset + 5]
+                            });
+                        }
                     }
 
                     completed++;

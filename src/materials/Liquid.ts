@@ -2,14 +2,10 @@ import { Grid } from '../core/Grid';
 import { Material } from './Material';
 import { materialRegistry } from './MaterialRegistry';
 import { GRAVITY } from '../core/Constants';
-import { MaterialId } from './MaterialIds';
 
 // Helper to check if a material is a gas (can be displaced by falling liquids)
 function isGas(id: number): boolean {
-    return id === MaterialId.STEAM ||
-        id === MaterialId.SMOKE ||
-        id === MaterialId.HOT_SMOKE ||
-        id === MaterialId.CRYO;
+    return materialRegistry.get(id)?.isGas ?? false;
 }
 
 export abstract class Liquid extends Material {

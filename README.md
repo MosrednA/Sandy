@@ -16,11 +16,11 @@ A **blazing-fast falling sand simulation** with GPU rendering, multi-threaded ph
 ## ✨ Features
 
 ### 🧱 Materials
-- **Solids**: Sand, Stone, Wood, Ice, Magma Rock.
-- **Liquids**: Water, Oil, Acid, Lava, Slime.
-- **Gases**: Steam, Smoke, Gas (explosive!), Cryo (freezing).
+- **Solids**: Sand, Stone, Wood, Ice, Magma Rock, Glass.
+- **Liquids**: Water, Oil, Acid, Lava, Slime, Mercury.
+- **Gases**: Steam, Smoke, Gas (explosive!), Cryo (freezing), Dust (explosive!).
 - **Energetics**: Fire, Gunpowder, C4 (plastic explosive), Coal, Firework.
-- **Special**: Black Hole (attracts and consumes particles).
+- **Special**: Black Hole (attracts and consumes particles), Plasma (ultra-hot ionized gas).
 - **Tools**: Erase, Brush size, Override toggle.
 
 ### 🌡️ Thermodynamics System (New!)

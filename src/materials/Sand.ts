@@ -1,20 +1,19 @@
 import { Grid } from '../core/Grid';
 import { Material } from './Material';
+import { materialRegistry } from './MaterialRegistry';
 import { GRAVITY } from '../core/Constants';
 import { MaterialId } from './MaterialIds';
 
 // Helper to check if a material is a gas (can be displaced by falling solids)
 function isGas(id: number): boolean {
-    return id === MaterialId.STEAM ||
-        id === MaterialId.SMOKE ||
-        id === MaterialId.HOT_SMOKE ||
-        id === MaterialId.CRYO;
+    return materialRegistry.get(id)?.isGas ?? false;
 }
 
 export class Sand extends Material {
     id = 2;
     name = "Sand";
     color = 0xD4A574; // Warm Earthy Sand
+    conductivity = 0.2; // Poor conductor
 
     update(grid: Grid, x: number, y: number): boolean {
         // Simple Gravity

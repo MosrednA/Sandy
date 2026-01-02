@@ -28,6 +28,7 @@ app.innerHTML = `
                     <button class="mat-btn" data-id="5" data-name="Wood" data-tip="Solid. Burns when touched by fire." style="--btn-color: #8B4513"></button>
                     <button class="mat-btn" data-id="15" data-name="Ice" data-tip="Freezes water. Melts near fire." style="--btn-color: #AADDFF"></button>
                     <button class="mat-btn" data-id="22" data-name="Magma" data-tip="Cooled lava. Remelts when heated." style="--btn-color: #442222"></button>
+                    <button class="mat-btn" data-id="27" data-name="Glass" data-tip="Transparent solid. Melts at extreme heat." style="--btn-color: #88CCFF"></button>
                 </div>
             </div>
             <div class="category">
@@ -38,6 +39,7 @@ app.innerHTML = `
                     <button class="mat-btn" data-id="9" data-name="Oil" data-tip="Floats on water. Very flammable!" style="--btn-color: #331100"></button>
                     <button class="mat-btn" data-id="14" data-name="Lava" data-tip="Burns everything. Stone + steam with water." style="--btn-color: #FF2200"></button>
                     <button class="mat-btn" data-id="20" data-name="Slime" data-tip="Radioactive! Mutates water to acid, burns wood." style="--btn-color: #00EE22"></button>
+                    <button class="mat-btn" data-id="26" data-name="Mercury" data-tip="Super-heavy liquid metal. Sinks below everything." style="--btn-color: #C0C0C0"></button>
                 </div>
             </div>
             <div class="category">
@@ -46,6 +48,7 @@ app.innerHTML = `
                     <button class="mat-btn" data-id="7" data-name="Steam" data-tip="Rises slowly. Turns back to water." style="--btn-color: #DDEEFF"></button>
                     <button class="mat-btn" data-id="17" data-name="Gas" data-tip="Rises and spreads. EXPLODES with fire!" style="--btn-color: #FFFF88"></button>
                     <button class="mat-btn" data-id="23" data-name="Cryo" data-tip="Freezing gas. Freezes water, extinguishes fire." style="--btn-color: #88FFFF"></button>
+                    <button class="mat-btn" data-id="28" data-name="Dust" data-tip="Floats in air. HIGHLY EXPLOSIVE with fire!" style="--btn-color: #AA9977"></button>
                 </div>
             </div>
             <div class="category">
@@ -62,6 +65,7 @@ app.innerHTML = `
                 <span class="category-label">Special</span>
                 <div class="material-group">
                     <button class="mat-btn" data-id="18" data-name="Black Hole" data-tip="Attracts and consumes particles!" style="--btn-color: #220033"></button>
+                    <button class="mat-btn" data-id="29" data-name="Plasma" data-tip="Ultra-hot ionized gas. Vaporizes everything!" style="--btn-color: #FF44FF"></button>
                 </div>
             </div>
             <div class="category">
@@ -77,6 +81,8 @@ app.innerHTML = `
             <div class="action-group">
                 <button id="clear-btn" class="action-btn">Clear</button>
                 <button id="open-sl-btn" class="action-btn" style="background: rgba(68, 136, 255, 0.2); color: #88bbff;">Save/Load</button>
+                <button id="debug-btn" class="action-btn" style="background: rgba(255, 100, 100, 0.2); color: #ff8888;">Debug</button>
+                <button id="heatmap-btn" class="action-btn" style="background: rgba(255, 165, 0, 0.2); color: #ffaa44;">Heatmap</button>
                 <label class="toggle-label">
                     <input type="checkbox" id="override-toggle" checked>
                     <span>Override</span>
@@ -92,72 +98,13 @@ app.innerHTML = `
 `;
 
 const canvas = document.querySelector<HTMLCanvasElement>('#sand-canvas')!;
-// Init with window size
-// Note: Changing canvas size requires re-creating Grid or complex logic.
-// For simplicity in this demo, we'll set it to window size on load.
-// Dynamic resize support would require recreating World/Grid on resize event.
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
 
-// 3. Initialize Core Systems
-// We need to allow World to take variable size in constructor if not checking constants
-// But accessing Grid relies on it. World constructor handles new Grid(W,H).
-// We imported Constants but we can ignore them if we pass args.
-// Let's modify World to accept W/H or just create a new one.
-// Actually, Grid expects W/H. World constructor needs to pass them.
-// I need to check World.ts if it accepts args.
-// It didn't. I'll pass them in anyway and then fix World.ts if needed, 
-// or I'll just rely on Constants for now? No, user wants Fullscreen.
-// I MUST update World.ts logic to accept dynamic size.
-
-// Let's assume I will update World.ts next.
-// const world = new World(canvas.width, canvas.height); 
-
-// TEMPORARY: using Constants for logic to avoid breaking everything immediately,
-// BUT scaling visual canvas to full screen.
-// This results in "stretched" pixels if aspect ratio differs, or pixelated look.
-// Better: Update constants or World to match window.
-// Since Constants are exported... adjusting them is hard.
-// I will change Main to just use the Constants for logical resolution, 
-// but CSS scales it to fullscreen?
-// User said "Make the app fullscreen". 
-// Option A: Logic resolution = Screen resolution (1:1 pixels). Best quality.
-// Option B: Logic resolution = Fixed (e.g. 400x300), Scaled to fit.
-// Given "Sand" simulation, 1:1 is best but performance heavy on 4K.
-// detailed "large canvas" request earlier means we should probably go big.
-// I'll stick to scaling for now to ensure performance unless instructed otherwise.
-// Wait, "simulating a large canvas" was the request.
-// So I should try to make logical resolution match window.
-
-// UPDATE: I will need to update World.ts to accept dimensions.
-// For now, I will write the Main.ts assuming World accepts (width, height).
-
-// 3. Initialize Core Systems
-// We'll update World to take args.
-// But first, let's just make it work with the current fixed size but stretched to fill screen?
-// No, that looks bad.
-// I will try to make the canvas match window size, but maybe downscale by 2 for performance?
-// scale = 1 means 1:1 pixels.
 // 3. Initialize Core Systems with Parallel Compute
 import { SharedMemory } from './core/SharedMemory';
 import { WorkerManager } from './core/WorkerManager';
 import { WORLD_WIDTH, WORLD_HEIGHT } from './core/Constants';
 
-const scale = 1;
-canvas.width = Math.ceil(window.innerWidth / scale);
-canvas.height = Math.ceil(window.innerHeight / scale);
-
-// Align canvas size to Constants if we want mapping to be exact, 
-// OR we just use the Constants for the internal buffer size and stretch it?
-// The previous logic tried to adapt. But WorkerManager uses Constants.
-// Let's enforce the Canvas rendering to view the internal Grid (World Size).
-// Or we map the dynamic canvas to the fixed world.
-// For now, let's use the Constants.WORLD_WIDTH/HEIGHT for the simulation.
-// And scale the canvas via CSS or rendering context?
-// Renderer uses `this.imageData = ctx.createImageData(world.grid.width, world.grid.height);`
-// So the imageData is sized to the Grid.
-// We should set the canvas to match the Grid size, then use CSS to scale it up.
-
+// Set canvas to match simulation grid size (CSS scales it to fullscreen)
 canvas.width = WORLD_WIDTH;
 canvas.height = WORLD_HEIGHT;
 
@@ -223,6 +170,23 @@ openSlBtn.addEventListener('click', () => {
 });
 
 
+
+// Debug buttons
+const debugBtn = document.getElementById('debug-btn')!;
+let debugEnabled = false;
+debugBtn.addEventListener('click', () => {
+  debugEnabled = !debugEnabled;
+  renderer.toggleDebug(debugEnabled);
+  debugBtn.style.background = debugEnabled ? 'rgba(255, 100, 100, 0.6)' : 'rgba(255, 100, 100, 0.2)';
+});
+
+const heatmapBtn = document.getElementById('heatmap-btn')!;
+let heatmapEnabled = false;
+heatmapBtn.addEventListener('click', () => {
+  heatmapEnabled = !heatmapEnabled;
+  renderer.toggleHeatmap(heatmapEnabled);
+  heatmapBtn.style.background = heatmapEnabled ? 'rgba(255, 165, 0, 0.6)' : 'rgba(255, 165, 0, 0.2)';
+});
 
 // Override toggle
 const overrideToggle = document.querySelector<HTMLInputElement>('#override-toggle')!;

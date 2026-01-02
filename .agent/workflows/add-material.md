@@ -73,8 +73,12 @@ Also, ensure that any relevant workflows in `.agent/workflows/` are updated (e.g
 | 23  | Cryo       |
 | 24  | Coal       |
 | 25  | Firework   |
+| 26  | Mercury    |
+| 27  | Glass      |
+| 28  | Dust       |
+| 29  | Plasma     |
 
-Next available ID: **26**
+Next available ID: **30**
 
 ## Glow Materials
 
@@ -85,13 +89,15 @@ Materials that glow in WebGL renderer (add to `WebGLRenderer.ts` `glowMaterials`
 - Lava (14)
 - Black Hole (18)
 - Firework (25)
+- Plasma (29)
 
 ## Categories for UI
 
-- **Solids**: Sand, Stone, Wood, Ice, Magma Rock
-- **Liquids**: Water, Acid, Oil, Lava, Slime
-- **Gases**: Steam, Gas, Cryo
+- **Solids**: Sand, Stone, Wood, Ice, Magma Rock, Glass
+- **Liquids**: Water, Acid, Oil, Lava, Slime, Mercury
+- **Gases**: Steam, Gas, Cryo, Dust
 - **Fire**: Fire, Powder (gunpowder), C4, Coal, Firework
-- **Special**: Black Hole
+- **Special**: Black Hole, Plasma
 - **Tools**: Erase
+
 

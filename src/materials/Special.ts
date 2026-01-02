@@ -85,3 +85,91 @@ export class Void extends Material {
     }
 }
 
+/**
+ * Plasma - Ultra-high temperature ionized gas
+ * Emissive, causes chain reactions, melts/vaporizes on contact
+ */
+export class Plasma extends Material {
+    id = MaterialId.PLASMA;
+    name = "Plasma";
+    color = 0xFF44FF; // Hot magenta/purple
+    isGas = true;
+    conductivity = 0.9; // Excellent heat conductor
+
+    update(grid: Grid, x: number, y: number): boolean {
+        // Plasma is extremely hot
+        grid.setTemp(x, y, 2000);
+
+        // Short lifespan
+        if (Math.random() < 0.03) {
+            grid.set(x, y, MaterialId.EMPTY);
+            return true;
+        }
+
+        // Vaporize/ignite neighbors
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        ];
+
+        for (const n of neighbors) {
+            const nx = x + n.dx;
+            const ny = y + n.dy;
+            const id = grid.get(nx, ny);
+
+            if (id === MaterialId.WALL || id === MaterialId.EMPTY) continue;
+
+            // Vaporize water to steam
+            if (id === MaterialId.WATER) {
+                grid.set(nx, ny, MaterialId.STEAM);
+                continue;
+            }
+
+            // Melt ice to steam
+            if (id === MaterialId.ICE) {
+                grid.set(nx, ny, MaterialId.STEAM);
+                continue;
+            }
+
+            // Ignite flammable materials
+            if (id === MaterialId.WOOD || id === MaterialId.OIL ||
+                id === MaterialId.GUNPOWDER || id === MaterialId.COAL) {
+                grid.set(nx, ny, MaterialId.FIRE);
+                continue;
+            }
+
+            // Melt sand to glass
+            if (id === MaterialId.SAND && Math.random() < 0.1) {
+                grid.set(nx, ny, MaterialId.GLASS);
+            }
+
+            // Heat transfer
+            grid.setTemp(nx, ny, grid.getTemp(nx, ny) + 200);
+        }
+
+        // Rise quickly (ionized = light)
+        if (Math.random() > 0.2) {
+            return false;
+        }
+
+        const dx = Math.floor(Math.random() * 3) - 1;
+        const ny = y - 1;
+        const nx = x + dx;
+
+        if (grid.get(nx, ny) === MaterialId.EMPTY) {
+            grid.move(x, y, nx, ny);
+            return true;
+        }
+
+        // Spread sideways
+        const side = Math.random() < 0.5 ? -1 : 1;
+        if (grid.get(x + side, y) === MaterialId.EMPTY) {
+            grid.move(x, y, x + side, y);
+            return true;
+        }
+
+        return false;
+    }
+}
+
+

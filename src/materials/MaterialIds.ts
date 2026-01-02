@@ -17,7 +17,7 @@ export const MaterialId = {
     EMBER: 13,
     LAVA: 14,
     ICE: 15,
-    SALT: 17,
+    GAS: 17,
     BLACK_HOLE: 18,
     HOT_SMOKE: 19,
     POISON: 20,
@@ -26,6 +26,11 @@ export const MaterialId = {
     CRYO: 23,
     COAL: 24,
     FIREWORK: 25,
+    // New materials
+    MERCURY: 26,
+    GLASS: 27,
+    DUST: 28,
+    PLASMA: 29,
     WALL: 255,  // Boundary
 } as const;
 

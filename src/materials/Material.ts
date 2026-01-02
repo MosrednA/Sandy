@@ -5,6 +5,8 @@ export abstract class Material {
     abstract name: string;
     abstract color: number; // 0xFFEEDD generic hex
     density?: number;
+    conductivity: number = 0.2; // Heat conductivity (0.0 = insulator, 1.0 = perfect conductor)
+    isGas: boolean = false; // Whether this material can be displaced by falling solids/liquids
 
     /**
      * Update a single cell.

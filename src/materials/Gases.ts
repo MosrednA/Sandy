@@ -6,6 +6,8 @@ export class Steam extends Material {
     id = MaterialId.STEAM;
     name = "Steam";
     color = 0xE0F0FF; // Translucent Steam
+    conductivity = 0.1; // Insulator
+    isGas = true;
 
     update(grid: Grid, x: number, y: number): boolean {
         // Rises! Anti-gravity.
@@ -68,6 +70,8 @@ export class Smoke extends Material {
     id = MaterialId.SMOKE;
     name = "Smoke";
     color = 0x222222; // Dark Smoke
+    conductivity = 0.05; // Almost insulator
+    isGas = true;
 
     update(grid: Grid, x: number, y: number): boolean {
         // Smoke rises slowly and dissipates
@@ -113,6 +117,8 @@ export class HotSmoke extends Material {
     id = MaterialId.HOT_SMOKE;
     name = "HotSmoke";
     color = 0x553311; // Dark Orange/Brown (transition color)
+    conductivity = 0.15; // Low conductor
+    isGas = true;
 
     update(grid: Grid, x: number, y: number): boolean {
         // Hot Smoke rises like smoke but quickly cools down to regular smoke
@@ -179,4 +185,88 @@ export class HotSmoke extends Material {
         return false;
     }
 }
+
+/**
+ * Dust - Suspended particles that float in air
+ * Highly explosive when ignited, creates flash fires
+ */
+export class Dust extends Material {
+    id = MaterialId.DUST;
+    name = "Dust";
+    color = 0xAA9977; // Tan/brown
+    isGas = true;
+    conductivity = 0.1;
+
+    update(grid: Grid, x: number, y: number): boolean {
+        // Temperature-based ignition (lower than gas - dust is more volatile!)
+        const temp = grid.getTemp(x, y);
+        if (temp > 150) {
+            if (Math.random() < 0.5) {
+                this.explode(grid, x, y);
+                return true;
+            }
+        }
+
+        // Check for fire contact
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        ];
+        for (const n of neighbors) {
+            const id = grid.get(x + n.dx, y + n.dy);
+            if (id === MaterialId.FIRE || id === MaterialId.EMBER) {
+                this.explode(grid, x, y);
+                return true;
+            }
+        }
+
+        // Slow decay
+        if (Math.random() < 0.001) {
+            grid.set(x, y, MaterialId.EMPTY);
+            return true;
+        }
+
+        // Drift slowly - dust floats
+        if (Math.random() > 0.3) return false;
+
+        const dx = Math.floor(Math.random() * 3) - 1;
+        const dy = Math.floor(Math.random() * 3) - 1;
+        const nx = x + dx;
+        const ny = y + dy;
+
+        if (grid.get(nx, ny) === MaterialId.EMPTY) {
+            grid.move(x, y, nx, ny);
+            return true;
+        }
+
+        return false;
+    }
+
+    private explode(grid: Grid, cx: number, cy: number) {
+        // Dust explosion - rapid fire spread
+        const radius = 4;
+        for (let dy = -radius; dy <= radius; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist <= radius) {
+                    const nx = cx + dx;
+                    const ny = cy + dy;
+                    const id = grid.get(nx, ny);
+
+                    if (id === MaterialId.WALL || id === undefined) continue;
+
+                    // Chain reaction with other dust
+                    if (id === MaterialId.DUST) {
+                        grid.set(nx, ny, MaterialId.FIRE);
+                    } else if (id === MaterialId.EMPTY && Math.random() < 0.6) {
+                        grid.set(nx, ny, MaterialId.FIRE);
+                    }
+                }
+            }
+        }
+        grid.set(cx, cy, MaterialId.FIRE);
+        grid.setTemp(cx, cy, 800);
+    }
+}
+
 

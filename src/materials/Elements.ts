@@ -10,6 +10,7 @@ export class Lava extends Liquid {
     density = 20; // Heavier than Acid(15) and Water(10)
     dispersion = 3;
     flowRate = 0.15; // Very viscous
+    conductivity = 0.6; // Good heat radiator
 
     update(grid: Grid, x: number, y: number): boolean {
         // Lava flows like slow water, ignites things, hardens with water
@@ -17,6 +18,15 @@ export class Lava extends Liquid {
         // 1. Check current temperature (Is it cooling down?)
         // We check this BEFORE setting it back to 1000, so we can detect conduction cooling.
         const temp = grid.getTemp(x, y);
+
+        // NEW: Temperature-based solidification (cooled through conduction)
+        // If lava has cooled below 600° (e.g., surrounded by stone), it solidifies
+        if (temp < 600) {
+            if (Math.random() < 0.15) { // 15% chance to solidify when cold
+                grid.set(x, y, MaterialId.MAGMA_ROCK);
+                return true;
+            }
+        }
 
         // 2. Check for water contact - turn both to Stone (Physical phase change interaction)
         // Only if Lava has actually cooled down (Simulating thermal inertia/crust formation)
@@ -68,6 +78,7 @@ export class Ice extends Material {
     id = MaterialId.ICE;
     name = "Ice";
     color = 0x88CCEE; // Cyan Ice
+    conductivity = 0.4; // Moderate conductor
 
     update(grid: Grid, x: number, y: number): boolean {
         // COLD: Ice emits -50° temperature
@@ -100,7 +111,7 @@ export class Ice extends Material {
 
 
 export class Gas extends Material {
-    id = MaterialId.SALT;
+    id = MaterialId.GAS;
     name = "Gas";
     color = 0xFFEE66; // Rich Gas
 
@@ -164,7 +175,7 @@ export class Gas extends Material {
 
                     if (id === MaterialId.WALL || id === undefined) continue;
 
-                    if (id === MaterialId.SALT) { // Other gas - chain reaction
+                    if (id === MaterialId.GAS) { // Other gas - chain reaction
                         grid.set(nx, ny, MaterialId.FIRE); // Turn to fire
                     } else if (id === MaterialId.EMPTY && Math.random() < 0.5) {
                         grid.set(nx, ny, MaterialId.FIRE); // Fire
@@ -182,6 +193,7 @@ export class MagmaRock extends Material {
     name = "MagmaRock";
     color = 0x442222; // Dark reddish-brown
     density = 30; // Heavier than Lava(20) and Water(10)
+    conductivity = 0.3; // Slow conductor
 
     update(grid: Grid, x: number, y: number): boolean {
         // Temperature-based remelting (>800°)
@@ -245,6 +257,8 @@ export class Cryo extends Material {
     id = MaterialId.CRYO;
     name = "Cryo";
     color = 0x88FFFF; // Bright cyan
+    conductivity = 0.7; // Fast cooling
+    isGas = true;
 
     update(grid: Grid, x: number, y: number): boolean {
         // COLD: Cryo emits -100° temperature (coldest!)
@@ -289,6 +303,7 @@ export class Coal extends Material {
     id = MaterialId.COAL;
     name = "Coal";
     color = 0x222222; // Very dark gray
+    conductivity = 0.15; // Poor conductor
 
     update(grid: Grid, x: number, y: number): boolean {
         // Temperature-based ignition (>250°)
