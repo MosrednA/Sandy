@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sandy - Material Guide</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-hover: #1a1a25;
+            --accent: #5588ff;
+            --accent-glow: rgba(85, 136, 255, 0.3);
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --border: #2a2a35;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #ff6622, #ffaa44, #ff6622);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 span {
+            font-size: 1.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--accent);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        h2 {
+            color: var(--accent);
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        h3 {
+            color: #aaa;
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Material Cards Grid */
+        .materials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .material-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .material-card:hover {
+            background: var(--bg-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .material-swatch {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            margin: 0 auto 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .material-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .material-type {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+        }
+
+        /* Interactions Table */
+        .interactions-section {
+            margin-bottom: 3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        th {
+            background: var(--bg-hover);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--accent);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .arrow {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .chance {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        /* Temperature & Density Reference */
+        .reference-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .reference-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .reference-card h4 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .reference-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .reference-item:last-child {
+            border-bottom: none;
+        }
+
+        .temp-cold {
+            color: #88ccff;
+        }
+
+        .temp-cool {
+            color: #88ffff;
+        }
+
+        .temp-warm {
+            color: #ffaa44;
+        }
+
+        .temp-hot {
+            color: #ff6622;
+        }
+
+        .temp-plasma {
+            color: #ff44ff;
+        }
+
+        /* Tips Section */
+        .tips {
+            background: linear-gradient(135deg, rgba(85, 136, 255, 0.1), rgba(255, 68, 255, 0.1));
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .tips h4 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .tips ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tips li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .tips li::before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dim);
+            border-top: 1px solid var(--border);
+            margin-top: 3rem;
+        }
+
+        /* Glow effects for special materials */
+        .glow-fire {
+            box-shadow: 0 0 15px rgba(255, 102, 34, 0.5);
+        }
+
+        .glow-plasma {
+            box-shadow: 0 0 15px rgba(255, 68, 255, 0.5);
+        }
+
+        .glow-cryo {
+            box-shadow: 0 0 15px rgba(136, 255, 255, 0.5);
+        }
+
+        .glow-lava {
+            box-shadow: 0 0 15px rgba(255, 68, 17, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🏖️ Sandy <span>Material Guide</span></h1>
+            <p class="subtitle">Complete reference for all materials and their interactions</p>
+            <a href="/" class="back-link">← Back to Simulation</a>
+        </header>
+
+        <!-- MATERIALS OVERVIEW -->
+        <section>
+            <h2>📦 All Materials</h2>
+
+            <h3>�ite Solids</h3>
+            <div class="materials-grid">
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #888888;"></div>
+                    <div class="material-name">Stone</div>
+                    <div class="material-type">Indestructible</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #e6c588;"></div>
+                    <div class="material-name">Sand</div>
+                    <div class="material-type">Falls & Piles</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #8b5a2b;"></div>
+                    <div class="material-name">Wood</div>
+                    <div class="material-type">Flammable</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #88ccee;" class="glow-cryo"></div>
+                    <div class="material-name">Ice</div>
+                    <div class="material-type">Freezes & Melts</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #442222;"></div>
+                    <div class="material-name">Magma Rock</div>
+                    <div class="material-type">Cooled Lava</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #aaddff;"></div>
+                    <div class="material-name">Glass</div>
+                    <div class="material-type">Transparent</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #222222;"></div>
+                    <div class="material-name">Coal</div>
+                    <div class="material-type">Slow Burn</div>
+                </div>
+            </div>
+
+            <h3>💧 Liquids</h3>
+            <div class="materials-grid">
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #2266cc;"></div>
+                    <div class="material-name">Water</div>
+                    <div class="material-type">Density: 10</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #ccff33;"></div>
+                    <div class="material-name">Acid</div>
+                    <div class="material-type">Dissolves</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #1a0a00;"></div>
+                    <div class="material-name">Oil</div>
+                    <div class="material-type">Floats & Burns</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #00ee22;"></div>
+                    <div class="material-name">Slime</div>
+                    <div class="material-type">Radioactive</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #ff4411;" class="glow-lava"></div>
+                    <div class="material-name">Lava</div>
+                    <div class="material-type">1000°</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #c0c0c0;"></div>
+                    <div class="material-name">Mercury</div>
+                    <div class="material-type">Heaviest</div>
+                </div>
+            </div>
+
+            <h3>💨 Gases</h3>
+            <div class="materials-grid">
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #e0f0ff;"></div>
+                    <div class="material-name">Steam</div>
+                    <div class="material-type">Rises</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #222222;"></div>
+                    <div class="material-name">Smoke</div>
+                    <div class="material-type">Disperses</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #553311;"></div>
+                    <div class="material-name">Hot Smoke</div>
+                    <div class="material-type">150°</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #ffee66;"></div>
+                    <div class="material-name">Gas</div>
+                    <div class="material-type">Neutral State</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #88ffff;" class="glow-cryo"></div>
+                    <div class="material-name">Cryo</div>
+                    <div class="material-type">-100°</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #aa9977;"></div>
+                    <div class="material-name">Dust</div>
+                    <div class="material-type">Explosive</div>
+                </div>
+            </div>
+
+            <h3>🔥 Energetics</h3>
+            <div class="materials-grid">
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #ff6622;" class="glow-fire"></div>
+                    <div class="material-name">Fire</div>
+                    <div class="material-type">500°</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #2a2a2a;"></div>
+                    <div class="material-name">Gunpowder</div>
+                    <div class="material-type">Explosive</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #dddddd;"></div>
+                    <div class="material-name">C4</div>
+                    <div class="material-type">Massive Boom</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #ff4400;" class="glow-fire"></div>
+                    <div class="material-name">Ember</div>
+                    <div class="material-type">Burning Wood</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #ff00ff;"></div>
+                    <div class="material-name">Firework</div>
+                    <div class="material-type">Launches Up</div>
+                </div>
+            </div>
+
+            <h3>✨ Special</h3>
+            <div class="materials-grid">
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #220044; box-shadow: inset 0 0 20px #000;"></div>
+                    <div class="material-name">Black Hole</div>
+                    <div class="material-type">Consumes All</div>
+                </div>
+                <div class="material-card">
+                    <div class="material-swatch" style="background: #ff44ff;" class="glow-plasma"></div>
+                    <div class="material-name">Plasma</div>
+                    <div class="material-type">2000°</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- KEY INTERACTIONS -->
+        <section class="interactions-section">
+            <h2>⚡ Key Interactions</h2>
+
+            <h3>🔥 Fire & Heat</h3>
+            <table>
+                <tr>
+                    <th>Combination</th>
+                    <th>Result</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>Fire + Wood</td>
+                    <td><span class="arrow">→</span> Ember</td>
+                    <td>Spreads fire</td>
+                </tr>
+                <tr>
+                    <td>Fire + Oil</td>
+                    <td><span class="arrow">→</span> Fire</td>
+                    <td>Instant spread</td>
+                </tr>
+                <tr>
+                    <td>Fire + Ice</td>
+                    <td><span class="arrow">→</span> Water</td>
+                    <td>20% chance</td>
+                </tr>
+                <tr>
+                    <td>Fire + Slime</td>
+                    <td><span class="arrow">→</span> Fire</td>
+                    <td>Flammable</td>
+                </tr>
+                <tr>
+                    <td>Water + Fire</td>
+                    <td><span class="arrow">→</span> Steam (both)</td>
+                    <td>Extinguishes</td>
+                </tr>
+            </table>
+
+            <h3>❄️ Cold & Freezing</h3>
+            <table>
+                <tr>
+                    <th>Combination</th>
+                    <th>Result</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>Cryo + Water</td>
+                    <td><span class="arrow">→</span> Ice</td>
+                    <td>15% direct freeze</td>
+                </tr>
+                <tr>
+                    <td>Cryo + Steam</td>
+                    <td><span class="arrow">→</span> Water</td>
+                    <td>20% condense</td>
+                </tr>
+                <tr>
+                    <td>Cryo + Fire</td>
+                    <td><span class="arrow">→</span> Steam</td>
+                    <td>Extinguishes</td>
+                </tr>
+                <tr>
+                    <td>Cryo + Lava</td>
+                    <td><span class="arrow">→</span> Magma Rock + Steam</td>
+                    <td>Rapid cooling</td>
+                </tr>
+                <tr>
+                    <td>Ice + Water</td>
+                    <td><span class="arrow">→</span> Ice</td>
+                    <td>Spreads freeze</td>
+                </tr>
+                <tr>
+                    <td>Ice + Lava</td>
+                    <td><span class="arrow">→</span> Steam (fast) / Rock</td>
+                    <td>Aggressive melting</td>
+                </tr>
+            </table>
+
+            <h3>💨 Gas Transformations</h3>
+            <table>
+                <tr>
+                    <th>Condition</th>
+                    <th>Result</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>Gas + extreme cold (&lt;-50°)</td>
+                    <td><span class="arrow">→</span> Cryo</td>
+                    <td>Frozen gas</td>
+                </tr>
+                <tr>
+                    <td>Gas + extreme heat (&gt;1500°)</td>
+                    <td><span class="arrow">→</span> Plasma</td>
+                    <td>Ionized gas</td>
+                </tr>
+                <tr>
+                    <td>Gas + Ice</td>
+                    <td><span class="arrow">→</span> Cryo</td>
+                    <td>8% chance</td>
+                </tr>
+                <tr>
+                    <td>Gas + Lava</td>
+                    <td><span class="arrow">→</span> Plasma</td>
+                    <td>15% chance</td>
+                </tr>
+                <tr>
+                    <td>Gas + Cryo</td>
+                    <td><span class="arrow">→</span> Cryo</td>
+                    <td>Chain freeze</td>
+                </tr>
+                <tr>
+                    <td>Gas + Plasma</td>
+                    <td><span class="arrow">→</span> Plasma</td>
+                    <td>Chain ionization</td>
+                </tr>
+                <tr>
+                    <td>Gas + heat (&gt;200°)</td>
+                    <td><span class="arrow">→</span> Fire explosion</td>
+                    <td>Standard ignition</td>
+                </tr>
+            </table>
+
+            <h3>🟣 Plasma (2000°)</h3>
+            <table>
+                <tr>
+                    <th>Target</th>
+                    <th>Result</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>Water / Ice</td>
+                    <td><span class="arrow">→</span> Steam</td>
+                    <td>Instant vaporization</td>
+                </tr>
+                <tr>
+                    <td>Wood / Oil / Coal</td>
+                    <td><span class="arrow">→</span> Fire</td>
+                    <td>Ignites</td>
+                </tr>
+                <tr>
+                    <td>C4 / Gunpowder</td>
+                    <td><span class="arrow">→</span> Explosion</td>
+                    <td>Detonates</td>
+                </tr>
+                <tr>
+                    <td>Gas / Dust</td>
+                    <td><span class="arrow">→</span> Explosion</td>
+                    <td>Chain reaction</td>
+                </tr>
+                <tr>
+                    <td>Sand</td>
+                    <td><span class="arrow">→</span> Glass</td>
+                    <td>10% vitrification</td>
+                </tr>
+            </table>
+
+            <h3>🧪 Acid</h3>
+            <table>
+                <tr>
+                    <th>Target</th>
+                    <th>Result</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>Stone / Sand / Wood</td>
+                    <td><span class="arrow">→</span> Dissolved</td>
+                    <td>10% per contact</td>
+                </tr>
+                <tr>
+                    <td>Ice</td>
+                    <td><span class="arrow">→</span> Water</td>
+                    <td>30% fast melt</td>
+                </tr>
+                <tr>
+                    <td>Lava</td>
+                    <td><span class="arrow">→</span> Hot Smoke + Smoke</td>
+                    <td>Toxic reaction</td>
+                </tr>
+            </table>
+
+            <h3>💥 Explosives</h3>
+            <table>
+                <tr>
+                    <th>Material</th>
+                    <th>Trigger</th>
+                    <th>Effect</th>
+                </tr>
+                <tr>
+                    <td>Gunpowder</td>
+                    <td>&gt;150° or Acid</td>
+                    <td>Medium explosion</td>
+                </tr>
+                <tr>
+                    <td>C4</td>
+                    <td>&gt;100°</td>
+                    <td>Massive explosion</td>
+                </tr>
+                <tr>
+                    <td>Dust</td>
+                    <td>&gt;150° or Fire</td>
+                    <td>Flash fire</td>
+                </tr>
+                <tr>
+                    <td>Gas</td>
+                    <td>&gt;200°</td>
+                    <td>Fiery explosion</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- GAS GENERATION -->
+        <section>
+            <h2>🔄 Natural Generation</h2>
+            <table>
+                <tr>
+                    <th>Source</th>
+                    <th>Produces</th>
+                    <th>Condition</th>
+                </tr>
+                <tr>
+                    <td>Oil</td>
+                    <td>Gas vapors</td>
+                    <td>Temperature 100-250°</td>
+                </tr>
+                <tr>
+                    <td>Lava</td>
+                    <td>Fire / Smoke / Gas</td>
+                    <td>Random bubbles (1%)</td>
+                </tr>
+                <tr>
+                    <td>Gas + Ice</td>
+                    <td>Cryo</td>
+                    <td>Contact (8%)</td>
+                </tr>
+                <tr>
+                    <td>Gas + Lava</td>
+                    <td>Plasma</td>
+                    <td>Contact (15%)</td>
+                </tr>
+            </table>
+
+            <div class="tips">
+                <h4>💡 Pro Tips</h4>
+                <ul>
+                    <li><strong>Create Plasma:</strong> Pour Gas over Lava, or heat Gas above 1500°</li>
+                    <li><strong>Create Cryo:</strong> Let Gas float near Ice, or cool Gas below -50°</li>
+                    <li><strong>Chain Reactions:</strong> Cryo and Plasma spread to nearby Gas!</li>
+                    <li><strong>Oil + Lava = Boom:</strong> Oil evaporates to Gas, which becomes Plasma</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- REFERENCE TABLES -->
+        <section>
+            <h2>📊 Reference</h2>
+            <div class="reference-grid">
+                <div class="reference-card">
+                    <h4>🌡️ Temperature Emissions</h4>
+                    <div class="reference-item">
+                        <span class="temp-cold">Cryo</span>
+                        <span>-100°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="temp-cold">Ice</span>
+                        <span>-50°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="temp-cool">Water</span>
+                        <span>10°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Room Temp</span>
+                        <span>20°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="temp-warm">Hot Smoke</span>
+                        <span>150°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="temp-hot">Fire</span>
+                        <span>500°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="temp-hot">Lava</span>
+                        <span>1000°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span class="temp-plasma">Plasma</span>
+                        <span>2000°</span>
+                    </div>
+                </div>
+
+                <div class="reference-card">
+                    <h4>💧 Liquid Density (Stacking)</h4>
+                    <div class="reference-item">
+                        <span>Oil</span>
+                        <span>5 (floats)</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Water</span>
+                        <span>10</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Slime</span>
+                        <span>12</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Acid</span>
+                        <span>15</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Lava</span>
+                        <span>20</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Magma Rock</span>
+                        <span>30</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Mercury</span>
+                        <span>100 (sinks)</span>
+                    </div>
+                </div>
+
+                <div class="reference-card">
+                    <h4>🔥 Ignition Temperatures</h4>
+                    <div class="reference-item">
+                        <span>C4</span>
+                        <span>&gt;100°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Gunpowder / Dust</span>
+                        <span>&gt;150°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Gas</span>
+                        <span>&gt;200°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Oil / Coal / Slime</span>
+                        <span>&gt;250°</span>
+                    </div>
+                </div>
+
+                <div class="reference-card">
+                    <h4>❄️ / 🔥 Phase Changes</h4>
+                    <div class="reference-item">
+                        <span>Water → Ice</span>
+                        <span>&lt;0°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Ice → Water</span>
+                        <span>&gt;0°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Water → Steam</span>
+                        <span>&gt;100°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Lava → Magma Rock</span>
+                        <span>&lt;600°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Magma Rock → Lava</span>
+                        <span>&gt;800°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Gas → Cryo</span>
+                        <span>&lt;-50°</span>
+                    </div>
+                    <div class="reference-item">
+                        <span>Gas → Plasma</span>
+                        <span>&gt;1500°</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>Sandy Falling Sand Simulation &bull; 24 Materials &bull; 50+ Interactions</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">Last Updated: January 2026</p>
+        </footer>
+    </div>
+</body>
+
+</html>
