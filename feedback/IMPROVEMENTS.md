@@ -1,33 +1,7 @@
 # Sandy - Project Improvement Report
 
-> **Generated**: January 1, 2026  
-> **Last Updated**: January 2, 2026  
-> **Analysis Scope**: Full codebase deep-dive
-
----
-
-## ✅ Completed
-
-| Task                                         | Status |
-| -------------------------------------------- | ------ |
-| Fix Gas → MaterialId bug                     | ✅ Done |
-| Temperature reset on clear                   | ✅ Done |
-| Remove duplicate canvas sizing               | ✅ Done |
-| Clean up commented code                      | ✅ Done |
-| Pre-compute conductivity LUT                 | ✅ Done |
-| Batch message passing (Transferable)         | ✅ Done |
-| New materials (Mercury, Glass, Dust, Plasma) | ✅ Done |
-
----
-
-## ⚠️ Reverted
-
-### Chunk Sleeping Optimization
-**File**: `src/workers/physics.worker.ts`
-
-Implementation caused particles to freeze mid-air. The wake propagation logic needs redesign — when a particle falls, chunks above it must also be woken so waiting particles can fill the space.
-
-**Future approach**: Need to wake a vertical column of chunks, not just immediate neighbors.
+> **Last Updated**: 2026-01-09  
+> **Analysis Scope**: Full codebase review
 
 ---
 
@@ -37,81 +11,87 @@ Implementation caused particles to freeze mid-air. The wake propagation logic ne
 
 #### 1. Object Pooling for Off-Grid Particles
 **Impact**: Medium  
-Reduce GC pressure by reusing particle objects instead of `push({...})`.
+Reduce GC pressure by reusing particle objects instead of `push({...})` in `Grid.addOffGridParticle()`.
 
 #### 2. Spatial Hashing for Collision Detection
-**Impact**: Low-Medium  
-Use spatial partitioning for faster off-grid particle collision checks.
-
-#### 3. SIMD Temperature Updates
 **Impact**: Low  
-Explore WASM SIMD for bulk temperature array operations.
+Use spatial partitioning for faster off-grid particle collision checks (only relevant with many projectiles).
 
 ---
 
 ### Architecture
 
 #### 1. Extract UI from `main.ts`
-**Impact**: High (maintainability)  
-Move 90+ lines of HTML to `src/ui/MaterialPanel.ts`.
+**Impact**: Medium  
+Move ~90 lines of HTML template to `src/ui/MaterialPanel.ts`. Current size: 214 lines.
 
 #### 2. Abstract `FallingSolid` Base Class
 **Impact**: Medium  
-Reduce duplication across Sand, Coal, MagmaRock, Gunpowder.
-
-#### 3. TypeScript Strict Mode
-**Impact**: Medium  
-Enable `strict: true` in `tsconfig.json` to catch null issues.
+Create shared base class for Sand, Coal, MagmaRock, Gunpowder to reduce code duplication.
 
 ---
 
 ### Features
 
 #### 1. Mobile/Touch Support
+**Impact**: Medium  
 Add touch event handlers to `InputHandler.ts` for mobile devices.
 
 #### 2. Wind System
+**Impact**: Low  
 Add global wind vector affecting gas movement with UI slider.
 
-#### 3. Debug Overlay
-Toggle-able view showing:
-- Active chunk boundaries
-- Temperature heatmap
-- Velocity vectors
+#### 3. Undo/Redo System
+**Impact**: Low  
+Track state changes for undo functionality. Complex due to grid size.
 
-#### 4. Undo/Redo System
-Track state changes for undo functionality.
-
-#### 5. Material Spawners
+#### 4. Material Spawners
+**Impact**: Low  
 Continuous-output blocks (water fountain, fire source, etc.)
 
-#### 6. Brush Shapes
-Add circle, square, line brush options.
+#### 5. Brush Shapes
+**Impact**: Low  
+Add circle, square, line brush options to InputHandler.
 
-#### 7. Pressure System
+#### 6. Pressure System
+**Impact**: Low  
 Simulate liquid pressure pushing upward in confined spaces.
 
-#### 8. Sound Effects
-Add ambient sounds for fire crackling, water flowing, explosions.
+---
+
+## 💡 New Material Ideas
+
+| Material        | Category | Behavior                             |
+| --------------- | -------- | ------------------------------------ |
+| **Rubber**      | Solid    | Bouncy, absorbs explosions           |
+| **Mud**         | Liquid   | Thick, slows movement, dries to dirt |
+| **Lightning**   | Special  | Chain-arcs between conductors        |
+| **Electricity** | Special  | Flows through metals, zaps water     |
+| **Vine**        | Solid    | Grows slowly, burns easily           |
+| **Snow**        | Solid    | Piles up, melts to water             |
 
 ---
 
-### New Material Ideas
+## 📚 Documentation
 
-| Material        | Category  | Behavior                             |
-| --------------- | --------- | ------------------------------------ |
-| **Rubber**      | Solid     | Bouncy, absorbs explosions           |
-| **Mud**         | Liquid    | Thick, slows movement, dries to dirt |
-| **Lightning**   | Special   | Chain-arcs between conductors        |
-| **Electricity** | Special   | Flows through metals, zaps water     |
-| **Vine**        | Solid     | Grows slowly, burns easily           |
-| **Snow**        | Solid     | Piles up, melts to water             |
-| **Smoke Bomb**  | Energetic | Creates large smoke cloud            |
-
----
-
-## Documentation
-
-- [ ] Add JSDoc to `Grid.ts`, `World.ts`, `WorkerManager.ts`
-- [ ] Create `ARCHITECTURE.md` explaining chunk/worker system
+- [ ] Create `docs/ARCHITECTURE.md` explaining chunk/worker system
 - [ ] Document material interaction matrix
+- [x] Add JSDoc to `Grid.ts` (partial - 3 annotations added)
+- [ ] Add JSDoc to `World.ts`, `WorkerManager.ts`
+
+---
+
+## ✅ Recently Verified (Archive after 2 weeks)
+
+These items have been verified as complete and will be removed in future cleanups:
+
+| Task                                         | Verified   |
+| -------------------------------------------- | ---------- |
+| TypeScript strict mode enabled               | 2026-01-09 |
+| Chunk sleeping implemented in Grid.ts        | 2026-01-09 |
+| New materials (Mercury, Glass, Dust, Plasma) | 2026-01-09 |
+| Conductivity LUT pre-computed                | 2026-01-09 |
+
+---
+
+*Previous completed items (Gas bug, temperature reset, canvas sizing, commented code cleanup, batch messaging) have been archived to git history.*

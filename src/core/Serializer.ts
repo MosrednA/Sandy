@@ -1,8 +1,30 @@
 import { Grid } from './Grid';
 
+/** File signature bytes: 'SAND' in ASCII */
 const SIGNATURE = [0x53, 0x41, 0x4E, 0x44]; // SAND
-const VERSION = 2; // Bumped to 2 for Temperature support
+/** Current save format version (2 = with temperature support) */
+const VERSION = 2;
 
+/**
+ * Handles serialization and deserialization of world state.
+ * Uses Run-Length Encoding (RLE) for efficient compression.
+ * 
+ * File format:
+ * - Header: SAND (4 bytes) + Version (1) + Width (2) + Height (2) + Flags (1)
+ * - Block 1: Cells RLE [Count (2), MaterialID (1)] ...
+ * - Block 2: Temperature RLE [Count (2), Float32 (4)] ... (V2+)
+ * 
+ * @example
+ * ```ts
+ * // Save world
+ * const data = Serializer.serialize(grid);
+ * await fetch('/api/save', { method: 'POST', body: data });
+ * 
+ * // Load world
+ * const response = await fetch('/api/load/world1');
+ * Serializer.deserialize(new Uint8Array(await response.arrayBuffer()), grid);
+ * ```
+ */
 export class Serializer {
 
     /**
@@ -95,20 +117,34 @@ export class Serializer {
 
     /**
      * Deserializes data into the grid.
+     * @param data - The serialized world data
+     * @param grid - The grid to populate with loaded data
+     * @throws Error if file signature is invalid (not a .sand file)
+     * @throws Error if file version is newer than supported
      */
     static deserialize(data: Uint8Array, grid: Grid): void {
+        if (!data || data.length < 10) {
+            throw new Error(`Invalid save file: File is too small (${data?.length ?? 0} bytes, minimum 10 required)`);
+        }
+
         let ptr = 0;
 
         // Check Signature
         for (let i = 0; i < 4; i++) {
             if (data[ptr++] !== SIGNATURE[i]) {
-                throw new Error('Invalid file signature');
+                throw new Error(
+                    `Invalid save file: Expected 'SAND' signature but got '${String.fromCharCode(data[0], data[1], data[2], data[3])}'. ` +
+                    `This file may be corrupted or not a Sandy world file.`
+                );
             }
         }
 
         const version = data[ptr++];
         if (version > VERSION) {
-            throw new Error(`Unsupported version: ${version}`);
+            throw new Error(
+                `Unsupported save file version: File is v${version}, but this version of Sandy only supports up to v${VERSION}. ` +
+                `Please update Sandy to load this file.`
+            );
         }
 
         const width = data[ptr++] | (data[ptr++] << 8);

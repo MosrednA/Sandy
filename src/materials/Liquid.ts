@@ -39,7 +39,7 @@ export abstract class Liquid extends Material {
         const steps = Math.floor(velocity);
 
         let moved = false;
-        let currentX = x;
+        const currentX = x;
         let currentY = y;
         let hitGround = false;
 
@@ -157,7 +157,7 @@ export abstract class Liquid extends Material {
         // Better random direction based on high-frequency noise
         // This avoids diagonal banding
         const dirRand = (x * 4523 + y * 8321 + grid.frameCount * 5123);
-        let dir = (dirRand & 1) === 0 ? 1 : -1;
+        const dir = (dirRand & 1) === 0 ? 1 : -1;
 
         // Cheap random drift: use last bit of X
         // if ((x & 1) === 0) dir = -dir; // Simple spatial jitter

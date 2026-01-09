@@ -541,3 +541,67 @@ input[type=range]::-webkit-slider-thumb {
 .delete-btn:hover {
   background: rgba(255, 80, 80, 0.4) !important;
 }
+
+/* Info Overlay */
+.info-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.info-overlay.hidden {
+  display: none;
+}
+
+.info-overlay-content {
+  position: relative;
+  width: 90vw;
+  height: 90vh;
+  max-width: 1200px;
+  background: #0a0a0f;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8),
+    0 0 60px rgba(85, 136, 255, 0.15);
+  animation: scaleIn 0.25s ease-out;
+}
+
+.info-overlay-content iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.close-info-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 80, 80, 0.3);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-info-btn:hover {
+  background: rgba(255, 80, 80, 0.6);
+  transform: scale(1.1);
+}

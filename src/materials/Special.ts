@@ -125,15 +125,34 @@ export class Plasma extends Material {
                 continue;
             }
 
-            // Melt ice to steam
+            // Melt ice to steam (skip water phase)
             if (id === MaterialId.ICE) {
                 grid.set(nx, ny, MaterialId.STEAM);
                 continue;
             }
 
-            // Ignite flammable materials
-            if (id === MaterialId.WOOD || id === MaterialId.OIL ||
-                id === MaterialId.GUNPOWDER || id === MaterialId.COAL) {
+            // Trigger explosives directly (heat is 2000°, way above thresholds)
+            // C4 explodes at 100°, Gunpowder at 150° - plasma instantly detonates them
+            if (id === MaterialId.C4 || id === MaterialId.GUNPOWDER) {
+                // Set extreme temperature to trigger their explosion logic next frame
+                grid.setTemp(nx, ny, 2000);
+                continue;
+            }
+
+            // Gas ignites into explosion (chain reaction)
+            if (id === MaterialId.GAS) {
+                grid.setTemp(nx, ny, 2000); // Triggers gas ignition
+                continue;
+            }
+
+            // Dust explodes
+            if (id === MaterialId.DUST) {
+                grid.setTemp(nx, ny, 2000); // Triggers dust explosion
+                continue;
+            }
+
+            // Ignite other flammables
+            if (id === MaterialId.WOOD || id === MaterialId.OIL || id === MaterialId.COAL) {
                 grid.set(nx, ny, MaterialId.FIRE);
                 continue;
             }
@@ -143,7 +162,7 @@ export class Plasma extends Material {
                 grid.set(nx, ny, MaterialId.GLASS);
             }
 
-            // Heat transfer
+            // Heat transfer to everything else
             grid.setTemp(nx, ny, grid.getTemp(nx, ny) + 200);
         }
 

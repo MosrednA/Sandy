@@ -218,7 +218,7 @@ export class SaveLoadUI {
                     list.appendChild(li);
                 });
             }
-        } catch (e) {
+        } catch (_e) {
             list.innerHTML = 'Failed to connect to server.';
         }
     }

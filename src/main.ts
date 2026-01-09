@@ -81,6 +81,7 @@ app.innerHTML = `
             <div class="action-group">
                 <button id="clear-btn" class="action-btn">Clear</button>
                 <button id="open-sl-btn" class="action-btn" style="background: rgba(68, 136, 255, 0.2); color: #88bbff;">Save/Load</button>
+                <button id="info-btn" class="action-btn" style="background: rgba(100, 255, 100, 0.2); color: #88ff88;">📖 Info</button>
                 <button id="debug-btn" class="action-btn" style="background: rgba(255, 100, 100, 0.2); color: #ff8888;">Debug</button>
                 <button id="heatmap-btn" class="action-btn" style="background: rgba(255, 165, 0, 0.2); color: #ffaa44;">Heatmap</button>
                 <label class="toggle-label">
@@ -92,6 +93,12 @@ app.innerHTML = `
                 <span class="info-name">Sand</span>
                 <span class="info-desc">Falls and piles up. Sinks in water.</span>
             </div>
+        </div>
+    </div>
+    <div id="info-overlay" class="info-overlay hidden">
+        <div class="info-overlay-content">
+            <button id="close-info-btn" class="close-info-btn">✕</button>
+            <iframe src="/info.html" frameborder="0"></iframe>
         </div>
     </div>
   </div>
@@ -169,6 +176,33 @@ openSlBtn.addEventListener('click', () => {
   saveLoadUI.show();
 });
 
+// Info overlay toggle
+const infoOverlay = document.getElementById('info-overlay')!;
+const infoBtn = document.getElementById('info-btn')!;
+const closeInfoBtn = document.getElementById('close-info-btn')!;
+
+infoBtn.addEventListener('click', () => {
+  infoOverlay.classList.remove('hidden');
+});
+
+closeInfoBtn.addEventListener('click', () => {
+  infoOverlay.classList.add('hidden');
+});
+
+// Close on overlay background click
+infoOverlay.addEventListener('click', (e) => {
+  if (e.target === infoOverlay) {
+    infoOverlay.classList.add('hidden');
+  }
+});
+
+// Close on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !infoOverlay.classList.contains('hidden')) {
+    infoOverlay.classList.add('hidden');
+  }
+});
+
 
 
 // Debug buttons
@@ -198,7 +232,7 @@ overrideToggle.addEventListener('change', () => {
 const fpsEl = document.getElementById('fps-counter')!;
 const pEl = document.getElementById('particle-counter')!;
 
-let lastTime = performance.now();
+const lastTime = performance.now();
 let frames = 0;
 let lastFpsTime = lastTime;
 

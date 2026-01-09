@@ -26,7 +26,7 @@ export class Fire extends Material {
             return true;
         }
 
-        // 2. Spread to flammables (temperature handles Ice/Coal/Gunpowder)
+        // 2. Spread to flammables and melt ice
         for (const n of Neighbors.ALL) {
             const nx = x + n.dx;
             const ny = y + n.dy;
@@ -40,6 +40,10 @@ export class Fire extends Material {
             } else if (id === MaterialId.POISON && Math.random() < 0.15) {
                 // Slime is flammable
                 grid.set(nx, ny, MaterialId.FIRE);
+            } else if (id === MaterialId.ICE && Math.random() < 0.2) {
+                // Fire melts Ice directly to Water
+                grid.set(nx, ny, MaterialId.WATER);
+                grid.setTemp(nx, ny, 50); // Warm water
             }
         }
 

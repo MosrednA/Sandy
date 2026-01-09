@@ -14,7 +14,7 @@ let workerId = -1;
 let jitterX = 0;
 let jitterY = 0;
 
-let offGridParticles: OffGridParticle[] = [];
+const offGridParticles: OffGridParticle[] = [];
 
 self.onmessage = (e) => {
     const data = e.data;

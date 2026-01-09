@@ -1,19 +1,55 @@
 import { Material } from './Material';
 
-// Fast O(1) material lookup using flat array
+/**
+ * Central registry for all materials in the simulation.
+ * Provides O(1) lookup via pre-allocated arrays and caches computed values
+ * (colors, densities, conductivities) for high-performance rendering and physics.
+ * 
+ * @example
+ * ```ts
+ * import { materialRegistry } from './MaterialRegistry';
+ * 
+ * // Register a new material
+ * materialRegistry.register(new Sand());
+ * 
+ * // Get material by ID
+ * const material = materialRegistry.get(2); // Returns Sand
+ * 
+ * // Fast color lookup for rendering
+ * const color = materialRegistry.colors[2]; // ABGR format
+ * ```
+ */
 class MaterialRegistry {
-    // Pre-allocated array for O(1) lookup
+    /** Pre-allocated array for O(1) material lookup by ID. Max 256 materials. */
     private materials: (Material | undefined)[] = new Array(256).fill(undefined);
 
-    // Pre-computed color cache for renderer (avoid property access in hot loop)
+    /** 
+     * Pre-computed ABGR colors for each material ID.
+     * Used by the renderer to avoid property access in hot loops.
+     * Format: 0xAABBGGRR (little-endian for direct pixel writes)
+     */
     public colors: Uint32Array = new Uint32Array(256);
 
-    // Density Lookup Table (0 = No Density/Solid, >0 = Liquid Density)
+    /** 
+     * Density lookup table for liquid displacement physics.
+     * - 0: Empty/undefined
+     * - 1-254: Lighter to heavier liquids
+     * - 255: Solid (infinite density, cannot be displaced)
+     */
     public densities: Uint8Array = new Uint8Array(256);
 
-    // Conductivity Lookup Table for heat conduction (default 0.2)
+    /** 
+     * Thermal conductivity lookup table for heat simulation.
+     * Range: 0.0 (insulator) to 1.0 (perfect conductor).
+     * Default: 0.2
+     */
     public conductivities: Float32Array = new Float32Array(256).fill(0.2);
 
+    /**
+     * Registers a material and pre-computes its lookup values.
+     * @param material - The material instance to register
+     * @throws Console warning if overwriting an existing material ID
+     */
     register(material: Material) {
         if (this.materials[material.id]) {
             console.warn(`Material with ID ${material.id} already registered. Overwriting.`);
@@ -31,27 +67,6 @@ class MaterialRegistry {
         if (material.density !== undefined) {
             this.densities[material.id] = material.density;
         } else {
-            this.densities[material.id] = 0; // 0 implies unused or solid (infinite density for our checks?) 
-            // Logic check: We typically check if (other.density < my.density)
-            // If solid has density 0, it means we (10) > solid (0).
-            // Wait, usually solid is "heavier" or "fixed".
-            // Liquid logic: if (other.density < this.density) -> Swap.
-            // If Stone (Solid) has density 0, then Water(10) > Stone(0). Water will swap with Stone?
-            // NO. We only swap if we can move there.
-            // Usually we check `if (below === 0)` first.
-            // If `below` is Stone, we check density?
-            // Current code: `if (other && (other.density !== undefined)) { ... }`
-            // Solids like Stone usually don't have density defined.
-            // So `undefined` check prevents swap.
-            // We need a value that represents "Undefined".
-            // Uint8Array initializes to 0.
-            // If we use 0 to mean "Undefined", then lighter-than-water (Oil=5) cannot be 0.
-            // Does anything have density 0? Empty is 0. 
-            // Empty has ID 0. densities[0] = 0.
-
-            // If Stone (1) has no density, it is 0.
-            // Water(10) checks Stone(0). 0 < 10. Swap?
-            // YES, Water would sink through Stone if Stone is 0!
             // Solids should be HEAVIER (255) to prevent liquids sinking through them
             this.densities[material.id] = 255;
         }
@@ -60,15 +75,26 @@ class MaterialRegistry {
         this.conductivities[material.id] = material.conductivity ?? 0.2;
     }
 
-    // Inlined for performance - avoid function call overhead in hot paths
+    /**
+     * Gets a material by ID with bounds checking.
+     * @param id - Material ID (0-255)
+     * @returns The material instance or undefined if not registered
+     */
     get(id: number): Material | undefined {
         return this.materials[id];
     }
 
-    // Direct array access for maximum performance
+    /**
+     * Gets a material by ID without bounds checking.
+     * Use only when you are certain the ID is valid (hot paths).
+     * @param id - Material ID (0-255)
+     * @returns The material instance (undefined behavior if not registered)
+     */
     getUnsafe(id: number): Material {
         return this.materials[id]!;
     }
 }
 
+/** Singleton instance of the material registry. */
 export const materialRegistry = new MaterialRegistry();
+

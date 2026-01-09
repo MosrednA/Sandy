@@ -67,14 +67,26 @@ export class Oil extends Liquid {
     conductivity = 0.3; // Medium conductor
 
     update(grid: Grid, x: number, y: number): boolean {
-        // Temperature-based ignition (>250°)
         const temp = grid.getTemp(x, y);
+
+        // High heat (>250°) → ignites to Fire
         if (temp > 250) {
             if (Math.random() < 0.3) {
                 grid.set(x, y, MaterialId.FIRE);
                 return true;
             }
         }
+        // Moderate heat (100-250°) → evaporates to Gas
+        else if (temp > 100) {
+            if (Math.random() < 0.02) {
+                // Emit gas above if space available
+                const above = grid.get(x, y - 1);
+                if (above === MaterialId.EMPTY) {
+                    grid.set(x, y - 1, MaterialId.GAS);
+                }
+            }
+        }
+
         return super.update(grid, x, y);
     }
 }

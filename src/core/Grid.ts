@@ -2,26 +2,53 @@ import { CHUNK_SIZE } from './Constants';
 import { PARTICLE_COUNT_INDEX } from './SharedMemory'; // KEEP THIS IMPORT
 import type { OffGridParticle } from './Constants'; // Add this
 
+/**
+ * 2D grid for the falling sand simulation.
+ * Stores material IDs, velocities, and temperatures for each cell.
+ * Supports chunk-based sleeping optimization for performance.
+ * 
+ * @example
+ * ```ts
+ * const grid = new Grid(256, 256);
+ * grid.set(100, 50, MaterialIds.SAND);
+ * const id = grid.get(100, 50); // Returns SAND id
+ * ```
+ */
 export class Grid {
+    /** Width of the grid in cells */
     width: number;
+    /** Height of the grid in cells */
     height: number;
+    /** Flat array of material IDs (0 = empty, 255 = boundary) */
     cells: Uint8Array;
 
-    // Queue for off-grid particles generated during this frame
+    /** Queue for off-grid particles generated during this frame (e.g., firework sparks) */
     public queuedParticles: OffGridParticle[] = [];
 
-    // Optimization: Active Chunks
+    /** Number of chunk columns */
     cols: number;
+    /** Number of chunk rows */
     rows: number;
-    chunks: Uint8Array; // 1 = Active, 0 = Sleeping (Next Frame)
-    activeChunks: Uint8Array; // 1 = Active, 0 = Sleeping (Current Frame)
+    /** Chunk state for next frame (1 = active, 0 = sleeping) */
+    chunks: Uint8Array;
+    /** Chunk state for current frame */
+    activeChunks: Uint8Array;
+    /** Per-cell velocity (positive = falling faster) */
     velocity: Float32Array;
-    temperature: Float32Array; // NEW: Per-particle temperature
+    /** Per-cell temperature in Celsius (default: 20°C room temp) */
+    temperature: Float32Array;
+    /** Current physics frame count */
     frameCount: number = 0;
 
-    // Shared sync buffer for atomic operations
+    /** Shared sync buffer for atomic particle counting across threads */
     private syncView: Int32Array | null = null;
 
+    /**
+     * Creates a new Grid instance.
+     * @param width - Grid width in cells
+     * @param height - Grid height in cells
+     * @param buffers - Optional SharedArrayBuffers for multi-threaded physics
+     */
     constructor(width: number, height: number, buffers?: {
         grid: SharedArrayBuffer,
         velocity: SharedArrayBuffer,

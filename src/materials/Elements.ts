@@ -28,8 +28,7 @@ export class Lava extends Liquid {
             }
         }
 
-        // 2. Check for water contact - turn both to Stone (Physical phase change interaction)
-        // Only if Lava has actually cooled down (Simulating thermal inertia/crust formation)
+        // 2. Check neighbor interactions
         const neighbors = [
             { dx: 0, dy: -1 },
             { dx: 0, dy: 1 },
@@ -42,26 +41,44 @@ export class Lava extends Liquid {
             const ny = y + n.dy;
             const id = grid.get(nx, ny);
 
+            // Lava + Water -> Magma Rock + Steam (with thermal inertia)
             if (id === MaterialId.WATER) {
-                // Reaction: Lava + Water -> Magma Rock + Steam
-                // Temperature Based: Only harden if we are losing heat (temp < liquid threshold)
-                // We use 900° as threshold (Lava is nominally 1000°)
-                if (temp < 950) { // If we lost >50° to the water
-                    // Chance simulates "Time to freeze" (Thermal Capactiy)
-                    if (Math.random() < 0.1) { // 10% chance if cooling
+                // Only harden if we are losing heat (temp < liquid threshold)
+                if (temp < 950) {
+                    if (Math.random() < 0.1) {
                         grid.set(x, y, MaterialId.MAGMA_ROCK);
                         grid.set(nx, ny, MaterialId.STEAM);
                         return true;
                     }
                 }
             }
+            // Lava + Ice -> Ice melts fast! Lava rarely crusts
+            else if (id === MaterialId.ICE) {
+                // Ice always melts to steam (lava is 1000°!)
+                if (Math.random() < 0.4) { // 40% chance - fast melt
+                    grid.set(nx, ny, MaterialId.STEAM);
+                    grid.setTemp(nx, ny, 200); // Hot steam
+                }
+                // Small chance lava crusts from the cold
+                if (Math.random() < 0.02) { // Only 2% crust chance
+                    grid.set(x, y, MaterialId.MAGMA_ROCK);
+                    return true;
+                }
+            }
         }
 
-        // 3. Emit fire/smoke occasionally
+        // 3. Emit fire/smoke/gas occasionally (volcanic activity)
         if (Math.random() < 0.01) {
             const above = grid.get(x, y - 1);
             if (above === MaterialId.EMPTY) {
-                grid.set(x, y - 1, Math.random() < 0.5 ? MaterialId.FIRE : MaterialId.SMOKE);
+                const roll = Math.random();
+                if (roll < 0.4) {
+                    grid.set(x, y - 1, MaterialId.FIRE);
+                } else if (roll < 0.7) {
+                    grid.set(x, y - 1, MaterialId.SMOKE);
+                } else {
+                    grid.set(x, y - 1, MaterialId.GAS); // Volcanic gas!
+                }
             }
         }
 
@@ -114,16 +131,79 @@ export class Gas extends Material {
     id = MaterialId.GAS;
     name = "Gas";
     color = 0xFFEE66; // Rich Gas
+    isGas = true;
 
     update(grid: Grid, x: number, y: number): boolean {
-        // Gas rises and explodes when ignited
-
-        // Temperature-based ignition (>200°)
+        // Gas is the "neutral" state that transforms based on temperature
         const temp = grid.getTemp(x, y);
+
+        // === PHASE TRANSFORMATIONS ===
+
+        // Extreme cold → Cryo (frozen gas)
+        if (temp < -50) {
+            if (Math.random() < 0.15) {
+                grid.set(x, y, MaterialId.CRYO);
+                return true;
+            }
+        }
+
+        // Extreme heat → Plasma (ionized gas)
+        if (temp > 1500) {
+            if (Math.random() < 0.2) {
+                grid.set(x, y, MaterialId.PLASMA);
+                return true;
+            }
+        }
+
+        // Medium heat → Fire explosion (existing behavior)
         if (temp > 200) {
             if (Math.random() < 0.3) {
                 this.ignite(grid, x, y);
                 return true;
+            }
+        }
+
+        // === NEIGHBOR INTERACTIONS ===
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        ];
+
+        for (const n of neighbors) {
+            const nx = x + n.dx;
+            const ny = y + n.dy;
+            const id = grid.get(nx, ny);
+
+            // Gas + Ice → Cryo (direct freeze)
+            if (id === MaterialId.ICE) {
+                if (Math.random() < 0.08) {
+                    grid.set(x, y, MaterialId.CRYO);
+                    return true;
+                }
+            }
+
+            // Gas + Lava → Plasma (superheated)
+            if (id === MaterialId.LAVA) {
+                if (Math.random() < 0.15) {
+                    grid.set(x, y, MaterialId.PLASMA);
+                    return true;
+                }
+            }
+
+            // Gas + Cryo → more Cryo (chain freeze)
+            if (id === MaterialId.CRYO) {
+                if (Math.random() < 0.05) {
+                    grid.set(x, y, MaterialId.CRYO);
+                    return true;
+                }
+            }
+
+            // Gas + Plasma → more Plasma (chain ionization) 
+            if (id === MaterialId.PLASMA) {
+                if (Math.random() < 0.1) {
+                    grid.set(x, y, MaterialId.PLASMA);
+                    return true;
+                }
             }
         }
 
@@ -133,8 +213,7 @@ export class Gas extends Material {
             return true;
         }
 
-        // Rise and spread - slower than before
-        // Only move 40% of frames
+        // Rise and spread - only move 40% of frames
         if (Math.random() > 0.4) {
             return false;
         }
@@ -263,6 +342,48 @@ export class Cryo extends Material {
     update(grid: Grid, x: number, y: number): boolean {
         // COLD: Cryo emits -100° temperature (coldest!)
         grid.setTemp(x, y, -100);
+
+        // Check neighbors for freezing interactions
+        const neighbors = [
+            { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        ];
+        for (const n of neighbors) {
+            const nx = x + n.dx;
+            const ny = y + n.dy;
+            const id = grid.get(nx, ny);
+
+            // Cryo + Water → Ice (direct freeze)
+            if (id === MaterialId.WATER) {
+                if (Math.random() < 0.15) {
+                    grid.set(nx, ny, MaterialId.ICE);
+                    grid.setTemp(nx, ny, -20);
+                }
+            }
+            // Cryo + Steam → Water (condense)
+            else if (id === MaterialId.STEAM) {
+                if (Math.random() < 0.2) {
+                    grid.set(nx, ny, MaterialId.WATER);
+                }
+            }
+            // Cryo + Fire → Steam (extinguish with hiss)
+            else if (id === MaterialId.FIRE || id === MaterialId.EMBER) {
+                grid.set(nx, ny, MaterialId.STEAM);
+                // Cryo consumed in the process
+                if (Math.random() < 0.3) {
+                    grid.set(x, y, MaterialId.EMPTY);
+                    return true;
+                }
+            }
+            // Cryo + Lava → MagmaRock (rapid cooling)
+            else if (id === MaterialId.LAVA) {
+                if (Math.random() < 0.2) {
+                    grid.set(nx, ny, MaterialId.MAGMA_ROCK);
+                    grid.set(x, y, MaterialId.STEAM); // Cryo vaporizes
+                    return true;
+                }
+            }
+        }
 
         // Decay
         if (Math.random() < 0.015) {
