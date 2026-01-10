@@ -1,7 +1,23 @@
 # Sandy - Project Improvement Report
 
-> **Last Updated**: 2026-01-09  
-> **Analysis Scope**: Full codebase review
+> **Last Updated**: 2026-01-10  
+> **Analysis Scope**: Full codebase review  
+> **Maturity Rating**: Early Beta (63/100) - See [PROJECT-MATURITY.md](./PROJECT-MATURITY.md)
+
+---
+
+## 🚨 Critical Priority (Blocking Production)
+
+### 1. Testing Infrastructure
+**Impact**: Critical  
+**Status**: ❌ Not Started  
+Vitest is installed but **zero test files exist**. This is the #1 blocker for production readiness.
+
+**Files to test first:**
+- `Grid.ts` - Core data structure, bounds checking
+- `Serializer.ts` - Save/load must be bulletproof
+- `MaterialRegistry.ts` - Registration and lookup
+- Key material interactions (water+fire, acid+stone)
 
 ---
 

@@ -17,6 +17,7 @@ export class Stone extends Material {
     name = "Stone";
     color = 0x5C5C6E; // Cool Rocky Gray
     conductivity = 0.3; // Slow conductor
+    canSleep = true; // Stone is always static
 
     update(_grid: Grid, _x: number, _y: number): boolean {
         return false;
@@ -32,6 +33,7 @@ export class Glass extends Material {
     name = "Glass";
     color = 0x88CCFF; // Light blue tint for visibility
     conductivity = 0.4;
+    canSleep = true; // Glass only reacts to extreme heat
 
     update(grid: Grid, x: number, y: number): boolean {
         // Glass melts back to sand at very high temperatures

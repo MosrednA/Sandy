@@ -14,6 +14,7 @@ export class Sand extends Material {
     name = "Sand";
     color = 0xD4A574; // Warm Earthy Sand
     conductivity = 0.2; // Poor conductor
+    canSleep = true; // Sand can sleep when settled
 
     update(grid: Grid, x: number, y: number): boolean {
         // Simple Gravity

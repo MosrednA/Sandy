@@ -2,14 +2,27 @@
 
 This file tracks improvements to make the Sandy codebase more maintainable, testable, and AI-friendly.
 
+> **Last Updated**: 2026-01-10  
+> **Maturity Rating**: Early Beta (63/100) - See [PROJECT-MATURITY.md](./PROJECT-MATURITY.md)
+
 ---
 
-## High Priority
+## 🚨 Critical Priority
 
 - [ ] **Testing Infrastructure**: Add tests for core systems
   - Vitest is installed ✅
-  - No test files written yet
+  - No test files written yet ❌
+  - **This is the #1 blocker for production readiness**
   - Priority: Grid physics, Material interactions, Serialization
+
+- [ ] **CI/CD Pipeline**: Set up GitHub Actions
+  - No automated testing on push
+  - No lint/format enforcement
+  - Suggested: `.github/workflows/ci.yml`
+
+---
+
+## High Priority
 
 ---
 

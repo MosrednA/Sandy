@@ -6,6 +6,7 @@ export class Wood extends Material {
     id = MaterialId.WOOD;
     name = "Wood";
     color = 0x654321; // Dark Mahogany
+    canSleep = true; // Wood can sleep when not near fire
 
     update(grid: Grid, x: number, y: number): boolean {
         // Wood is a static solid that starts smoldering when touched by fire/ember

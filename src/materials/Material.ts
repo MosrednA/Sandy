@@ -7,6 +7,7 @@ export abstract class Material {
     density?: number;
     conductivity: number = 0.2; // Heat conductivity (0.0 = insulator, 1.0 = perfect conductor)
     isGas: boolean = false; // Whether this material can be displaced by falling solids/liquids
+    canSleep: boolean = false; // Whether this material can enter sleep state when idle
 
     /**
      * Update a single cell.

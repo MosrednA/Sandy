@@ -46,6 +46,12 @@ class MaterialRegistry {
     public conductivities: Float32Array = new Float32Array(256).fill(0.2);
 
     /**
+     * Sleep eligibility lookup table for particle sleep optimization.
+     * 1 = can sleep when idle, 0 = must always be processed.
+     */
+    public canSleep: Uint8Array = new Uint8Array(256);
+
+    /**
      * Registers a material and pre-computes its lookup values.
      * @param material - The material instance to register
      * @throws Console warning if overwriting an existing material ID
@@ -73,6 +79,9 @@ class MaterialRegistry {
 
         // Populate Conductivity LUT
         this.conductivities[material.id] = material.conductivity ?? 0.2;
+
+        // Populate canSleep LUT
+        this.canSleep[material.id] = material.canSleep ? 1 : 0;
     }
 
     /**

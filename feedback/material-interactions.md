@@ -1,8 +1,9 @@
 # Sandy Material Interactions Matrix
 
-> **Last Updated**: 2026-01-09  
+> **Last Updated**: 2026-01-10  
 > **Total Materials**: 24  
-> **Total Interactions**: 35+ documented
+> **Total Interactions**: 35+ documented  
+> **Test Coverage**: ❌ None (priority item)
 
 ---
 

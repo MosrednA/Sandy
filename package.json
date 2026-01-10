@@ -1,7 +1,8 @@
 {
-  "name": "sand2",
+  "name": "sandy",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0-alpha",
+  "description": "A blazing-fast falling sand simulation with GPU rendering and multi-threaded physics",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run vite\"",

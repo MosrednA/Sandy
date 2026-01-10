@@ -37,6 +37,8 @@ export class Grid {
     velocity: Float32Array;
     /** Per-cell temperature in Celsius (default: 20°C room temp) */
     temperature: Float32Array;
+    /** Per-cell sleep timer (0 = active, increments each idle frame, >= SLEEP_THRESHOLD = sleeping) */
+    sleepTimer: Uint8Array;
     /** Current physics frame count */
     frameCount: number = 0;
 
@@ -54,6 +56,7 @@ export class Grid {
         velocity: SharedArrayBuffer,
         temperature: SharedArrayBuffer,
         chunkState: SharedArrayBuffer,
+        sleepTimer?: SharedArrayBuffer,
         sync?: SharedArrayBuffer
     }) {
         this.width = width;
@@ -67,6 +70,9 @@ export class Grid {
             this.velocity = new Float32Array(buffers.velocity);
             this.temperature = new Float32Array(buffers.temperature);
             this.chunks = new Uint8Array(buffers.chunkState);
+            this.sleepTimer = buffers.sleepTimer
+                ? new Uint8Array(buffers.sleepTimer)
+                : new Uint8Array(width * height);
             if (buffers.sync) {
                 this.syncView = new Int32Array(buffers.sync);
             }
@@ -74,6 +80,7 @@ export class Grid {
             this.cells = new Uint8Array(width * height);
             this.velocity = new Float32Array(width * height);
             this.temperature = new Float32Array(width * height);
+            this.sleepTimer = new Uint8Array(width * height);
             this.chunks = new Uint8Array(this.cols * this.rows).fill(1);
         }
 
@@ -131,8 +138,15 @@ export class Grid {
         this.temperature[idx2] = this.temperature[idx1];
         this.temperature[idx1] = 20; // Reset to room temp
 
+        // Move sleep timer (particle stays awake since it moved)
+        this.sleepTimer[idx2] = 0;
+        this.sleepTimer[idx1] = 0;
+
+        // Wake chunk and particle neighbors
         this.wake(x1, y1);
         this.wake(x2, y2);
+        this.wakeNeighbors(x1, y1);
+        this.wakeNeighbors(x2, y2);
     }
 
     /**
@@ -155,8 +169,15 @@ export class Grid {
         this.temperature[idx1] = this.temperature[idx2];
         this.temperature[idx2] = tmpTemp;
 
+        // Both particles swapped - reset sleep timers
+        this.sleepTimer[idx1] = 0;
+        this.sleepTimer[idx2] = 0;
+
+        // Wake chunk and particle neighbors
         this.wake(x1, y1);
         this.wake(x2, y2);
+        this.wakeNeighbors(x1, y1);
+        this.wakeNeighbors(x2, y2);
     }
 
     /**
@@ -179,7 +200,9 @@ export class Grid {
             this.cells[idx] = id;
             this.velocity[idx] = 0; // Reset velocity on manual set
             this.temperature[idx] = 20; // Reset to room temp
+            this.sleepTimer[idx] = 0; // New particle starts awake
             this.wake(x, y);
+            this.wakeNeighbors(x, y);
         }
     }
 
@@ -201,10 +224,12 @@ export class Grid {
         this.cells[index] = id;
         this.velocity[index] = 0; // Reset velocity
         this.temperature[index] = 20; // Reset to room temp
+        this.sleepTimer[index] = 0; // New particle starts awake
         // Bitwise floor is faster than Math.floor for positive integers
         const x = index - ((index / this.width) | 0) * this.width; // x = index % width (faster)
         const y = (index / this.width) | 0;
         this.wake(x, y);
+        this.wakeNeighbors(x, y);
     }
 
     getIndex(x: number, y: number): number {
@@ -215,6 +240,7 @@ export class Grid {
         this.cells.fill(0);
         this.velocity.fill(0);
         this.temperature.fill(20); // Reset to room temp
+        this.sleepTimer.fill(0); // Reset sleep timers
         this.chunks.fill(0);
         this.activeChunks.fill(0);
         if (this.syncView) {
@@ -255,6 +281,90 @@ export class Grid {
     private wakeChunk(cx: number, cy: number) {
         if (cx >= 0 && cx < this.cols && cy >= 0 && cy < this.rows) {
             this.chunks[cy * this.cols + cx] = 1;
+        }
+    }
+
+    /**
+     * Wake a specific cell (reset its sleep timer to 0).
+     * Called when a particle becomes active.
+     */
+    wakeCell(x: number, y: number): void {
+        if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+            this.sleepTimer[y * this.width + x] = 0;
+        }
+    }
+
+    /**
+     * Wake a cell and its 8 neighbors (reset sleep timers).
+     * Called on any grid mutation to ensure neighbors react to changes.
+     */
+    wakeNeighbors(x: number, y: number): void {
+        const width = this.width;
+        const height = this.height;
+        const sleepTimer = this.sleepTimer;
+
+        // Wake the 3x3 area centered on (x, y)
+        for (let dy = -1; dy <= 1; dy++) {
+            const ny = y + dy;
+            if (ny < 0 || ny >= height) continue;
+            const rowOffset = ny * width;
+            for (let dx = -1; dx <= 1; dx++) {
+                const nx = x + dx;
+                if (nx >= 0 && nx < width) {
+                    sleepTimer[rowOffset + nx] = 0;
+                }
+            }
+        }
+    }
+
+    /**
+     * Scans entire grid and wakes all chunks containing particles,
+     * plus the chunk directly below each (gravity anticipation).
+     * Call this once per frame before snapshotting active chunks.
+     */
+    wakeAllOccupiedChunks(): void {
+        const width = this.width;
+        const cells = this.cells;
+        const cols = this.cols;
+        const rows = this.rows;
+
+        // Track which chunks have particles
+        const occupied = new Uint8Array(cols * rows);
+
+        // Single pass: mark chunks with any non-empty cell
+        for (let y = 0; y < this.height; y++) {
+            const cy = (y / CHUNK_SIZE) | 0;
+            const rowOffset = y * width;
+            for (let x = 0; x < width; x++) {
+                if (cells[rowOffset + x] !== 0) {
+                    const cx = (x / CHUNK_SIZE) | 0;
+                    occupied[cy * cols + cx] = 1;
+                }
+            }
+        }
+
+        // Wake occupied chunks + chunk below (gravity) + neighbors
+        for (let cy = 0; cy < rows; cy++) {
+            for (let cx = 0; cx < cols; cx++) {
+                if (occupied[cy * cols + cx]) {
+                    // Wake this chunk
+                    this.chunks[cy * cols + cx] = 1;
+                    // Wake chunk below (gravity anticipation)
+                    if (cy + 1 < rows) {
+                        this.chunks[(cy + 1) * cols + cx] = 1;
+                    }
+                    // Wake left/right neighbors (for horizontal spread)
+                    if (cx > 0) this.chunks[cy * cols + (cx - 1)] = 1;
+                    if (cx + 1 < cols) this.chunks[cy * cols + (cx + 1)] = 1;
+                    // Wake diagonal below (for diagonal falling)
+                    if (cy + 1 < rows && cx > 0) {
+                        this.chunks[(cy + 1) * cols + (cx - 1)] = 1;
+                    }
+                    if (cy + 1 < rows && cx + 1 < cols) {
+                        this.chunks[(cy + 1) * cols + (cx + 1)] = 1;
+                    }
+                }
+            }
         }
     }
 

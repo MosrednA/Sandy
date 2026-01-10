@@ -7,7 +7,8 @@ export class SharedMemory {
     // Grid Data
     gridBuffer: SharedArrayBuffer;
     velocityBuffer: SharedArrayBuffer;
-    temperatureBuffer: SharedArrayBuffer; // NEW: Per-particle temperature
+    temperatureBuffer: SharedArrayBuffer; // Per-particle temperature
+    sleepTimerBuffer: SharedArrayBuffer; // Per-particle sleep timer (0 = awake, >= threshold = sleeping)
 
     // chunk active state (cols * rows)
     chunkStateBuffer: SharedArrayBuffer;
@@ -28,6 +29,7 @@ export class SharedMemory {
         this.gridBuffer = new SharedArrayBuffer(size); // Uint8
         this.velocityBuffer = new SharedArrayBuffer(size * 4); // Float32
         this.temperatureBuffer = new SharedArrayBuffer(size * 4); // Float32 - temperature
+        this.sleepTimerBuffer = new SharedArrayBuffer(size); // Uint8 - sleep timer per particle
 
         const cols = Math.ceil(WORLD_WIDTH / CHUNK_SIZE);
         const rows = Math.ceil(WORLD_HEIGHT / CHUNK_SIZE);

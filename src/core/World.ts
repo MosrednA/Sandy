@@ -11,6 +11,7 @@ export class World {
         velocity: SharedArrayBuffer,
         temperature: SharedArrayBuffer,
         chunkState: SharedArrayBuffer,
+        sleepTimer?: SharedArrayBuffer,
         sync?: SharedArrayBuffer
     }) {
         // Use args or fallback to constants

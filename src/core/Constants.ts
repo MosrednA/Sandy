@@ -1,5 +1,6 @@
 export const CHUNK_SIZE = 64; // Logic chunk size (increased for worker overhead reduction)
 export const GRAVITY = 0.35; // Was 0.5 - reduced for lighter feel
+export const SLEEP_THRESHOLD = 30; // Frames of inactivity before particle sleeps (at 60fps = 0.5s)
 
 // Dimensions
 // Dimensions

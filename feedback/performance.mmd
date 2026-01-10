@@ -1,0 +1,30 @@
+---
+title: Sandy Performance Optimizations
+---
+flowchart TB
+    subgraph Implemented["✅ Implemented"]
+        SAB["SharedArrayBuffer\n(Zero-copy grid sharing)"]
+        Workers["Web Workers\n(Off-main-thread physics)"]
+        Uint32["Uint32 Pixel Writes\n(4x fewer memory ops)"]
+        PreColors["Pre-computed Colors\n(Zero runtime conversion)"]
+        ChunkSleep["Chunk Sleeping\n(Skip inactive regions)"]
+        Pool["Object Pooling\n(TypedArray particles)"]
+        LUT["LUT Lookups\n(Density, Conductivity)"]
+    end
+
+    subgraph Planned["📋 Planned"]
+        Sparse["Sparse Chunk Tracking\n(Incremental wake)"]
+        StaticSleep["Static Particle Sleep\n(Skip settled particles)"]
+        Offscreen["OffscreenCanvas\n(Render in worker)"]
+    end
+
+    subgraph Rejected["❌ Rejected/Deferred"]
+        Jitter["Jitter Offset\n(Caused edge bugs)"]
+        WASM["WASM Physics\n(Complexity vs gain)"]
+    end
+
+    SAB --> Workers
+    Workers --> ChunkSleep
+    ChunkSleep --> Sparse
+    Pool --> StaticSleep
+    Uint32 --> Offscreen

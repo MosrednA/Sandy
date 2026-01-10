@@ -77,6 +77,7 @@ export class Gunpowder extends Material {
     name = "Gunpowder";
     color = 0x2A2A2A; // Dark Gunpowder
     conductivity = 0.15; // Poor conductor
+    canSleep = true; // Gunpowder can sleep when settled
 
     update(grid: Grid, x: number, y: number): boolean {
         // Gunpowder behaves like Sand but explodes when hot
@@ -266,6 +267,7 @@ export class C4 extends Material {
     name = "C4";
     color = 0xDDDDDD; // Off-white plastic explosive
     conductivity = 0.1; // Insulator
+    canSleep = true; // C4 only reacts to temperature
 
     update(grid: Grid, x: number, y: number): boolean {
         // Temperature-based detonation (>100° - very sensitive!)

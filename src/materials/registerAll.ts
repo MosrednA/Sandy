@@ -5,7 +5,7 @@ import { Acid, Oil, Slime, Water, Mercury } from './Liquids';
 import { Steam, Smoke, HotSmoke, Dust } from './Gases';
 import { Fire, Gunpowder, C4 } from './Energetics';
 import { Wood, Ember } from './Wood';
-import { Lava, Ice, Gas, MagmaRock, Cryo, Coal, Firework } from './Elements';
+import { Lava, Ice, Gas, MagmaRock, Cryo, Coal, Firework } from './elements';
 import { BlackHole, Plasma } from './Special';
 
 /**

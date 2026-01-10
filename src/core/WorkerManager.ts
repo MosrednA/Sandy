@@ -2,6 +2,65 @@ import { SharedMemory } from './SharedMemory';
 import { Phase, CHUNK_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from './Constants';
 import PhysicsWorker from '../workers/physics.worker?worker'; // Vite Worker Import
 
+/**
+ * Scans grid buffer and wakes chunks that contain particles + neighbors.
+ * Operates directly on SharedArrayBuffers from main thread.
+ */
+function wakeOccupiedChunks(
+    gridBuffer: SharedArrayBuffer,
+    chunkStateBuffer: SharedArrayBuffer,
+    width: number,
+    height: number,
+    cols: number,
+    rows: number
+): void {
+    const cells = new Uint8Array(gridBuffer);
+    const chunks = new Uint8Array(chunkStateBuffer);
+
+    // Track which chunks have particles
+    const occupied = new Uint8Array(cols * rows);
+
+    // Single pass: mark chunks with any non-empty cell
+    for (let y = 0; y < height; y++) {
+        const cy = (y / CHUNK_SIZE) | 0;
+        const rowOffset = y * width;
+        for (let x = 0; x < width; x++) {
+            if (cells[rowOffset + x] !== 0) {
+                const cx = (x / CHUNK_SIZE) | 0;
+                occupied[cy * cols + cx] = 1;
+            }
+        }
+    }
+
+    // Wake occupied chunks + neighbors (gravity + spread + rise)
+    for (let cy = 0; cy < rows; cy++) {
+        for (let cx = 0; cx < cols; cx++) {
+            if (occupied[cy * cols + cx]) {
+                // Wake this chunk
+                chunks[cy * cols + cx] = 1;
+                // Wake chunk below (gravity for solids/liquids)
+                if (cy + 1 < rows) {
+                    chunks[(cy + 1) * cols + cx] = 1;
+                }
+                // Wake chunk above (for rising gases)
+                if (cy > 0) {
+                    chunks[(cy - 1) * cols + cx] = 1;
+                }
+                // Wake left/right (horizontal spread)
+                if (cx > 0) chunks[cy * cols + (cx - 1)] = 1;
+                if (cx + 1 < cols) chunks[cy * cols + (cx + 1)] = 1;
+                // Wake diagonal below (diagonal falling)
+                if (cy + 1 < rows && cx > 0) {
+                    chunks[(cy + 1) * cols + (cx - 1)] = 1;
+                }
+                if (cy + 1 < rows && cx + 1 < cols) {
+                    chunks[(cy + 1) * cols + (cx + 1)] = 1;
+                }
+            }
+        }
+    }
+}
+
 export class WorkerManager {
     workers: Worker[] = [];
     sharedMemory: SharedMemory;
@@ -62,6 +121,7 @@ export class WorkerManager {
                     velocity: this.sharedMemory.velocityBuffer,
                     temperature: this.sharedMemory.temperatureBuffer,
                     chunkState: this.sharedMemory.chunkStateBuffer,
+                    sleepTimer: this.sharedMemory.sleepTimerBuffer,
                     sync: this.sharedMemory.syncBuffer
                 }
             });
@@ -77,10 +137,26 @@ export class WorkerManager {
     // 3. Resolve
 
     async update() {
-        // 1. Snapshot active chunks & Clear Next Frame Buffer
+        const cols = Math.ceil(WORLD_WIDTH / CHUNK_SIZE);
+        const rows = Math.ceil(WORLD_HEIGHT / CHUNK_SIZE);
+
+        // 1. Wake all chunks containing particles + their neighbors
+        // This ensures falling particles always have destination chunks active
+        wakeOccupiedChunks(
+            this.sharedMemory.gridBuffer,
+            this.sharedMemory.chunkStateBuffer,
+            WORLD_WIDTH,
+            WORLD_HEIGHT,
+            cols,
+            rows
+        );
+
+        // 2. Snapshot active chunks for this frame
         const chunkState = new Uint8Array(this.sharedMemory.chunkStateBuffer);
         this.currentActiveChunks.set(chunkState);
-        chunkState.fill(0); // Clear for writing next frame's info
+
+        // 3. Clear chunk state for next frame's wake calls
+        chunkState.fill(0);
 
         // Clear particles from previous frame
         this.activeParticles = [];
@@ -89,7 +165,7 @@ export class WorkerManager {
         const jitterX = Math.floor(Math.random() * CHUNK_SIZE);
         const jitterY = Math.floor(Math.random() * CHUNK_SIZE);
 
-        // 2. Run Phases
+        // 4. Run Phases
         // Shuffle phases to prevent directional bias
         const phases = [Phase.RED, Phase.BLUE, Phase.GREEN, Phase.YELLOW];
         for (let i = phases.length - 1; i > 0; i--) {
